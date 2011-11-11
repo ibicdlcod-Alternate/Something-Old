@@ -6,6 +6,9 @@
 
 #include <QTime>
 
+#include "OSCS.h"
+#include <QFile>
+
 GameRule::GameRule(QObject *parent)
     :TriggerSkill("game_rule")
 {
@@ -584,7 +587,22 @@ void GameRule::rewardAndPunish(ServerPlayer *killer, ServerPlayer *victim) const
         return;
 
     if(killer->getRoom()->getMode() == "06_3v3"){
-        killer->drawCards(3);
+#ifdef OSCS
+        if(killer->hasSkill("guixin_33")){
+            if(killer->askForSkillInvoke("guixin_33")){
+                Room *room = killer->getRoom();
+                room->revivePlayer(victim);
+                victim->drawCards(2);
+                room->setPlayerProperty(victim, "hp", 2);
+                if(victim->getRole() == "loyalist")
+                    room->setPlayerProperty(victim, "role", "rebel");
+                else if(victim->getRole() == "rebel")
+                    room->setPlayerProperty(victim, "role", "loyalist");
+            }
+        }
+        else
+#endif
+            killer->drawCards(3);
     }else{
         if(victim->getRole() == "rebel" && killer != victim){
             killer->drawCards(3);

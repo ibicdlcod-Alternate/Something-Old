@@ -6,6 +6,32 @@
 #include "god.h"
 #include "standard.h"
 
+//OE3100 shencc_33
+class Feiying_33: public DistanceSkill{
+public:
+    Feiying_33():DistanceSkill("feiying_33")
+    {
+    }
+
+    virtual int getCorrect(const Player *from, const Player *to) const{
+        if(from->hasSkill(objectName()))
+            return -from->getLostHp();
+        else
+            return 0;
+    }
+};
+
+class Guixin3: public TriggerSkill{
+public:
+    Guixin3():TriggerSkill("guixin_33")
+    {
+    }
+
+    virtual bool trigger(TriggerEvent event, ServerPlayer *player, QVariant &data) const{
+        return false;
+    }
+};
+
 class YitianSwordSkill : public WeaponSkill{
 public:
     YitianSwordSkill():WeaponSkill("yitian_sword"){
@@ -1834,6 +1860,10 @@ YitianPackage::YitianPackage()
     :Package("yitian")
 {
     // generals
+    General *shencc_33 = new General(this, "shencc3v3", "god", 3, true, false);
+    shencc_33->addSkill(new Feiying_33);
+    shencc_33->addSkill(new Guixin3);
+
     General *shencc = new General(this, "shencc", "god", 3);
     shencc->addSkill(new Guixin2);
     shencc->addSkill("feiying");

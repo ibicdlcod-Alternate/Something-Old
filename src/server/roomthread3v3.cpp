@@ -8,6 +8,9 @@
 
 #include <QDateTime>
 
+#include "OSCS.h"
+#include <QFile>
+
 RoomThread3v3::RoomThread3v3(Room *room)
     :QThread(room), room(room)
 {
@@ -33,13 +36,18 @@ QStringList RoomThread3v3::getGeneralsWithoutExtension() const{
     }
 
     generals.removeOne(Sanguosha->getGeneral("yuji"));
-
+#ifdef OSCS
+    generals.append(Sanguosha->getGeneral("shencc3v3"));
+    Q_ASSERT(generals.length() == 33);
+#else
     Q_ASSERT(generals.length() == 32);
-
+#endif
     QStringList general_names;
     foreach(const General *general, generals)
         general_names << general->objectName();
-
+#ifdef OSCS
+    general_names << "shencc3v3";
+#endif
     return general_names;
 }
 

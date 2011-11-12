@@ -392,10 +392,10 @@ luaqingguo = sgs.CreateViewAsSkill{
 		end
 	end,
 	
-	enabled_at_play = function()
-		return false
-	end,
-	
+--	enabled_at_play = function()
+--		return false
+--	end,
+--倾国把这里去掉就好了……	
 	enabled_at_response = function(player, pattern)
 		return true --pattern == "jink"
 	end

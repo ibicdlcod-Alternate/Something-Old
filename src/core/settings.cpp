@@ -46,7 +46,20 @@ void Settings::init(){
 
     CountDownSeconds = value("CountDownSeconds", 3).toInt();
     GameMode = value("GameMode", "02p").toString();
+
+
+    if(!contains("BanPackages")){
+        QStringList banlist;
+        banlist << "nostalgia" << "yitian" << "wisdom" << "test"
+                << "disaster" << "god" << "YJCM" << "yitian_cards"
+                << "sp" << "sp_cards"
+                << "joy" << "joy_equip";
+
+        setValue("BanPackages", banlist);
+    }
+
     BanPackages = value("BanPackages").toStringList();
+
     ContestMode = value("ContestMode", false).toBool();
     FreeChoose = value("FreeChoose", false).toBool();
     ForbidSIMC = value("ForbidSIMC", false).toBool();
@@ -94,5 +107,11 @@ void Settings::init(){
         QStringList banlist;
         banlist << "sunquan" << "huatuo" << "zhangliao" << "liubei";
         setValue("1v1/Banlist", banlist);
+    }
+
+    if(!contains("style/dock"))
+    {
+        setValue("style/button"," QPushButton {\r\n\tfont : 12px;\r\n     border: 1px solid gray;\r\n     background-image: url(image/system/button/back.png);\r\n\t color: yellow;\r\n\t padding: 6px 12px 6px 12px;\r\n }\r\n QPushButton:disabled {\r\n\tfont : 12px;\r\n     background-image: url(image/system/button/back_shade.png);\r\n\t color: white;\r\n }\r\n QCheckBox {\r\n\tfont : 12px;\r\n     border: 1px solid gray;\r\n\t color: yellow;\r\n\t padding: 6px 12px 6px 8px;\r\n }\r\n\r\n QCheckBox::indicator {\r\n     width: 0px;\r\n     height: 0px;\r\n }\r\n\r\n QCheckBox:unchecked {\r\n     background-image: url(image/system/button/frequent_checkbox/unchecked.png);\r\n }\r\n\r\n QCheckBox:unchecked:hover {\r\n     background-image: url(image/system/button/frequent_checkbox/unchecked_hover.png);\r\n }\r\n\r\n QCheckBox:unchecked:pressed {\r\n     background-image: url(image/system/button/frequent_checkbox/unchecked_press.png);\r\n }\r\n\r\n QCheckBox:checked {\r\n     background-image: url(image/system/button/frequent_checkbox/checked.png);\r\n }\r\n\r\n QCheckBox:checked:hover {\r\n     background-image: url(image/system/button/frequent_checkbox/checked_hover.png);\r\n }\r\n\r\n QCheckBox:checked:pressed {\r\n     background-image: url(image/system/button/frequent_checkbox/checked_press.png);\r\n }\r\n \r\n  QComboBox {\r\n\tbackground-image: url(image/system/button/back2.png);\r\n\tcolor : white;\r\n     border: 1px solid gray;\r\n     border-radius: 3px;\r\n     padding: 1px 18px 1px 3px;\r\n }\r\n\r\n QComboBox:on { /* shift the text when the popup opens */\r\n     padding-top: 3px;\r\n     padding-left: 4px;\r\n }\r\n\r\n QComboBox::drop-down {\r\n     subcontrol-origin: padding;\r\n     subcontrol-position: top right;\r\n     width: 15px;\r\n\r\n     border-left-width: 1px;\r\n     border-left-color: darkgray;\r\n     border-left-style: solid; /* just a single line */\r\n     border-top-right-radius: 3px; /* same radius as the QComboBox */\r\n     border-bottom-right-radius: 3px;\r\n }\r\n\r\n\r\n QComboBox::down-arrow:on { /* shift the arrow when popup is open */\r\n     top: 1px;\r\n     left: 1px;\r\n }\r\n");
+        setValue("style/dock","\r\n     background-image: url(image/system/skill-dock.png);\r\n ");
     }
 }

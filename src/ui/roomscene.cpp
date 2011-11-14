@@ -572,8 +572,8 @@ QList<QPointF> RoomScene::getPhotoPositions() const{
 }
 
 void RoomScene::changeTextEditBackground(){
-    chat_box->setStyleSheet("background-color: rgba(117, 107, 97, 85%);");
-    log_box->setStyleSheet("background-color: rgba(97, 83, 77, 85%);");
+    chat_box->setStyleSheet("background-color: rgba(0,0,0,50%);");
+    log_box->setStyleSheet("background-color: rgba(0,0,0,50%);");
 }
 
 void RoomScene::addPlayer(ClientPlayer *player){
@@ -3551,7 +3551,7 @@ void RoomScene::update_state_item(const QString &qstr)
 
 void RoomScene::updateStateItem(char* roles)
 {
-    foreach(QGraphicsItem *item,state_item->childItems())
+    foreach(QGraphicsItem *item, role_items)
         removeItem(item);
     role_items.clear();
 

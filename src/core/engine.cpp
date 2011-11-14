@@ -364,9 +364,9 @@ SkillCard *Engine::cloneSkillCard(const QString &name) const{
 
 QString Engine::getVersion() const{
 #ifdef OSCS
-    return "20111105";
+    return "20111225";
 #else
-    return "20110912";
+    return "20111113";
 #endif
 }
 
@@ -374,7 +374,7 @@ QString Engine::getVersionName() const{
 #ifdef OSCS
     return tr("OSCS X Beta");
 #else
-    return tr("MiddleAutumn");
+    return tr("Chibi");
 #endif
 }
 

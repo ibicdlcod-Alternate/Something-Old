@@ -5,7 +5,7 @@
 #include "standard.h"
 #include "settings.h"
 
-#include <OSCS.h>
+#include "src/oscs.h"
 #include <QFile>
 
 Player::Player(QObject *parent)

@@ -33,8 +33,8 @@
 #include <cstring>
 #include <QDateTime>
 
-#include "OSCS.h"
 #include <QFile>
+#include "src/oscs.h"
 
 #include "mainwindow.h"
 #include "settings.h"

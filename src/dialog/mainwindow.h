@@ -9,8 +9,8 @@
 #include <QSettings>
 #include <QComboBox>
 
-#include "OSCS.h"
 #include <QFile>
+#include "src/oscs.h"
 
 namespace Ui {
     class MainWindow;

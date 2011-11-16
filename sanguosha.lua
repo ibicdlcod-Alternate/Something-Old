@@ -22,6 +22,11 @@ function load_translations()
 	for _, file in ipairs(lang_files) do	
 		load_translation(("%s/%s"):format(lang_dir, file))
 	end
+	--for OSCS
+	local lang_OS_files = sgs.GetFileNames("luaOS/")
+	for _, file in ipairs(lang_OS_files) do
+		load_translation(("%s/%s"):format("luaOS/", file))
+	end
 end
 
 function load_extensions(just_require)
@@ -29,8 +34,6 @@ function load_extensions(just_require)
 	
 	for _, script in ipairs(scripts) do	
 		if script:match(".+%.lua$") then
-			--if script:match("OSCS.lua") then
-				--return end
 			local name = script:sub(script:find("%w+"))
 			local module_name = "extensions." .. name
 			local loaded = require(module_name)

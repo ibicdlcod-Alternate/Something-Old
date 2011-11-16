@@ -58,6 +58,9 @@
 #endif
 #endif
 
+#include "src/oscs.h"
+#include <QFile>
+
 static QPointF DiscardedPos(-6, -2);
 static QPointF DrawPilePos(-102, -2);
 
@@ -345,11 +348,20 @@ RoomScene::RoomScene(QMainWindow *main_window)
     skill_dock = new QDockWidget(main_window);
     skill_dock->setTitleBarWidget(new QWidget);
     skill_dock->titleBarWidget()->hide();
+#ifdef OSCS
+    skill_dock->setFixedHeight(45);
+#else
     skill_dock->setFixedHeight(30);
+#endif
 
     main_window->addDockWidget(Qt::BottomDockWidgetArea, skill_dock);
 
+#ifdef OSCS //UI
+    QFile file("sanguoshaoe.qss");
+#else
     QFile file("sanguosha.qss");
+#endif
+
     if(file.open(QIODevice::ReadOnly)){
         QTextStream stream(&file);
         skill_dock->setStyleSheet(stream.readAll());

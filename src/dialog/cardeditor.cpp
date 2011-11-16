@@ -19,7 +19,7 @@
 #include <QBitmap>
 #include <QClipboard>
 
-#include "OSCS.h"
+#include "src/oscs.h"
 #include <QFile>
 
 BlackEdgeTextItem::BlackEdgeTextItem()

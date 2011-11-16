@@ -6,7 +6,7 @@
 
 #include <QSize>
 
-#include "OSCS.h"
+#include "src/oscs.h"
 #include <QFile>
 
 General::General(Package *package, const QString &name, const QString &kingdom, int max_hp, bool male, bool hidden)

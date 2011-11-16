@@ -1860,7 +1860,7 @@ YitianPackage::YitianPackage()
     :Package("yitian")
 {
     // generals
-    General *shencc_33 = new General(this, "shencc3v3", "god", 3, true, false);
+    General *shencc_33 = new General(this, "shencc3v3", "god", 3, true, true);
     shencc_33->addSkill(new Feiying_33);
     shencc_33->addSkill(new Guixin3);
 

@@ -11,7 +11,7 @@ class Player;
 #include <QMap>
 
 #include <QFile>
-#include "OSCS.h"
+#include "src/oscs.h"
 
 class CardPattern{
 public:
@@ -72,6 +72,8 @@ protected:
 public:
     QMultiMap<QString, QString> related_skills;
 protected:
+#else
+    QMultiMap<QString, QString> related_skills;
 #endif
     Type type;
 };

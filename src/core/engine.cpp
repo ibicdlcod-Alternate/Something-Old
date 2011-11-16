@@ -8,7 +8,7 @@
 #include "lua.hpp"
 #include "banpairdialog.h"
 
-#include "OSCS.h"
+#include "src/oscs.h"
 
 #ifdef AUDIO_SUPPORT
 #ifdef  Q_OS_WIN32

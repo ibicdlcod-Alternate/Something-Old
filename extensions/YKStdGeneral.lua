@@ -200,9 +200,7 @@ luatuxi_card = sgs.CreateSkillCard{
 	
 	will_throw=false,
 
-		
 	filter = function(self,targets,to_select)
-		
 		if(#targets > 1) then return false end
 		
 		if(to_select == self) then return false end
@@ -438,6 +436,62 @@ lualuoshen = sgs.CreateTriggerSkill{
 	end
 }
 
+--Sunquan
+--Zhiheng by hypercross and ibicdlcod
+luazhiheng_card = sgs.CreateSkillCard{
+
+    name = "luazhiheng_card",
+
+    target_fixed = true,
+
+    will_throw = true,
+
+    on_use=function(self,room,source,targets)
+        room:throwCard(self)
+		if(source:isAlive()) then
+			room:drawCards(source,#self:getSubcards())
+			room:setPlayerFlag(source, "luazhiheng_used")
+		end
+    end,
+}
+--[[
+luazhiheng = sgs.CreateViewAsSkill{
+    name = "luazhiheng",
+	
+	n = 998,
+	
+	view_filter=function(self, selected, to_select)
+		return true
+	end,
+
+    view_as=function()
+        return luazhiheng_card:clone()
+    end,
+	
+	enabled_at_play=function()
+		return not sgs.Self:hasFlag("luazhiheng_used")
+	end
+}
+]]
+luazhiheng = sgs.CreateViewAsSkill{ --创建技能，技能种类为ViewAsSkill。 
+	name = "luazhiheng",
+	n = 998,
+	view_filter = function(self, selected, to_select)
+		return true
+	end,
+	
+	view_as = function(self, cards)--[[
+		if #cards == 1 then
+			local card = cards[1]
+			local new_card =sgs.Sanguosha:cloneCard("snatch", card:getSuit(), card:getNumber())
+			new_card:addSubcard(card:getId())
+			new_card:setSkillName(self:objectName())
+			return new_card
+		end]]
+		return luazhiheng_card:clone()
+	end
+}--关于技能的说明将是几乎所有其他帮助文件的重点。此处省略。
+
 --0201
 luacaocao = sgs.General(extension, "luacaocao$", "wei", 4)
 luacaocao:addSkill(luajianxiong)
@@ -471,6 +525,9 @@ luazhenji = sgs.General(extension, "luazhenji", "wei", 3, false)
 luazhenji:addSkill(luaqingguo)
 luazhenji:addSkill(lualuoshen)
 
+--0301
+luasunquan = sgs.General(extension, "luasunquan$", "wu", 4)
+luasunquan:addSkill(luazhiheng)
+
 sgs.LoadTranslationTable{
-	["YKStdGeneral"] = "YOKA鏍囧噯姝﹀皢",
 }

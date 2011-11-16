@@ -34,6 +34,7 @@
 #include <QTimer>
 #include <QCommandLinkButton>
 #include <QFormLayout>
+#include <QStatusBar>
 
 #ifdef Q_OS_WIN32
 #include <QAxObject>
@@ -58,9 +59,6 @@
 #endif
 #endif
 
-#include "src/oscs.h"
-#include <QFile>
-
 static QPointF DiscardedPos(-6, -2);
 static QPointF DrawPilePos(-102, -2);
 
@@ -68,7 +66,7 @@ RoomScene *RoomSceneInstance;
 
 RoomScene::RoomScene(QMainWindow *main_window)
     :focused(NULL), special_card(NULL), viewing_discards(false),
-    main_window(main_window), skill_dock(NULL)
+    main_window(main_window)
 {
     RoomSceneInstance = this;
 
@@ -345,28 +343,15 @@ RoomScene::RoomScene(QMainWindow *main_window)
 
 #endif
 
-    skill_dock = new QDockWidget(main_window);
-    skill_dock->setTitleBarWidget(new QWidget);
-    skill_dock->titleBarWidget()->hide();
-#ifdef OSCS
-    skill_dock->setFixedHeight(45);
-#else
-    skill_dock->setFixedHeight(30);
-#endif
+    QHBoxLayout* skill_dock_layout = new QHBoxLayout;
+    QMargins margins = skill_dock_layout->contentsMargins();
+    margins.setTop(0);
+    margins.setBottom(5);
+    skill_dock_layout->setContentsMargins(margins);
+    skill_dock_layout->addStretch();
 
-    main_window->addDockWidget(Qt::BottomDockWidgetArea, skill_dock);
-
-#ifdef OSCS //UI
-    QFile file("sanguoshaoe.qss");
-#else
-    QFile file("sanguosha.qss");
-#endif
-
-    if(file.open(QIODevice::ReadOnly)){
-        QTextStream stream(&file);
-        skill_dock->setStyleSheet(stream.readAll());
-    }
-
+    main_window->statusBar()->setObjectName("skill_bar_container");
+    main_window->statusBar()->setLayout(skill_dock_layout);
     addWidgetToSkillDock(sort_combobox, true);
 
     createStateItem();
@@ -1261,7 +1246,7 @@ void RoomScene::addSkillButton(const Skill *skill, bool from_left){
     }else if(skill->inherits("FilterSkill")){
         const FilterSkill *filter = qobject_cast<const FilterSkill *>(skill);
         if(filter && dashboard->getFilter() == NULL)
-            dashboard->setFilter(filter);        
+            dashboard->setFilter(filter);
         button = new QPushButton();
 
     }else if(skill->inherits("ViewAsSkill")){
@@ -1295,36 +1280,15 @@ void RoomScene::addWidgetToSkillDock(QWidget *widget, bool from_left){
     if(widget->inherits("QComboBox"))widget->setFixedHeight(20);
     else widget->setFixedHeight(26);
 
-    QWidget *container = skill_dock->widget();
-    QHBoxLayout *container_layout = NULL;
-    if(container == NULL){
-        container = new QWidget;
-        QHBoxLayout *layout = new QHBoxLayout;
-        QMargins margins = layout->contentsMargins();
-        margins.setTop(0);
-        margins.setBottom(5);
-        layout->setContentsMargins(margins);
-        container->setLayout(layout);
-        layout->addStretch();
-
-        skill_dock->setWidget(container);
-
-        container_layout = layout;
-    }else{
-        QLayout *layout = container->layout();
-        container_layout = qobject_cast<QHBoxLayout *>(layout);
-    }
-
-    if(from_left)
-        container_layout->insertWidget(0, widget);
+    if(!from_left)
+        main_window->statusBar()->addPermanentWidget(widget);
     else
-        container_layout->addWidget(widget);
+        main_window->statusBar()->addWidget(widget);
 }
 
 void RoomScene::removeWidgetFromSkillDock(QWidget *widget){
-    QWidget *container = skill_dock->widget();
-    if(container)
-        container->layout()->removeWidget(widget);
+    QStatusBar * bar = main_window->statusBar();
+    bar->removeWidget(widget);
 }
 
 void RoomScene::acquireSkill(const ClientPlayer *player, const QString &skill_name){
@@ -2981,9 +2945,6 @@ void RoomScene::onMusicFinish(){
 #endif
 #endif
 void RoomScene::freeze(){
-    main_window->removeDockWidget(skill_dock);
-    delete skill_dock;
-    skill_dock = NULL;
 
     ClientInstance->disconnectFromHost();
     dashboard->setEnabled(false);

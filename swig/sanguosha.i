@@ -667,7 +667,6 @@ public:
 
     const ProhibitSkill *isProhibited(const Player *from, const Player *to, const Card *card) const;
     int correctDistance(const Player *from, const Player *to) const;
-	
 };
 
 extern Engine *Sanguosha;
@@ -812,6 +811,7 @@ public:
     void resetAI(ServerPlayer *player);
     void transfigure(ServerPlayer *player, const char *new_general, bool full_state, bool invoke_start = true);
 	void swapSeat(ServerPlayer *a, ServerPlayer *b);
+    void swapSeat(ServerPlayer *a, ServerPlayer *b);
     lua_State *getLuaState() const;
     void setFixedDistance(Player *from, const Player *to, int distance);
     void reverseFor3v3(const Card *card, ServerPlayer *player, QList<ServerPlayer *> &list);

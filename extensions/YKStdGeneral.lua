@@ -394,8 +394,8 @@ luaqingguo = sgs.CreateViewAsSkill{
 		return false
 	end,
 	
-	enabled_at_response = function(player, pattern)
-		return true --pattern == "jink"
+	enabled_at_response = function(self, player, pattern)
+		return pattern == "jink"
 	end
 }
 

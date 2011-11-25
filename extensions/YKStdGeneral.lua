@@ -370,7 +370,7 @@ luayiji = sgs.CreateTriggerSkill{
 }
 
 --0207 Zhenji
---qingguo by ibicdlcod(unf)
+--qingguo by ibicdlcod and [QUN]huangshu
 luaqingguo = sgs.CreateViewAsSkill{
 	name = "luaqingguo",
 	
@@ -442,55 +442,45 @@ luazhiheng_card = sgs.CreateSkillCard{
 
     name = "luazhiheng_card",
 
-    target_fixed = true,
-
+	target_fixed = true,
+	
     will_throw = true,
 
     on_use=function(self,room,source,targets)
-        room:throwCard(self)
 		if(source:isAlive()) then
-			room:drawCards(source,#self:getSubcards())
-			room:setPlayerFlag(source, "luazhiheng_used")
+			room:drawCards(source, self:subcardsLength())--尼玛#getsubcards坑爹了N天啊
+			room:setPlayerFlag(source, "luazhiheng_used")		
+			room:throwCard(self)
 		end
     end,
 }
---[[
-luazhiheng = sgs.CreateViewAsSkill{
-    name = "luazhiheng",
-	
-	n = 998,
-	
-	view_filter=function(self, selected, to_select)
-		return true
-	end,
 
-    view_as=function()
-        return luazhiheng_card:clone()
-    end,
-	
-	enabled_at_play=function()
-		return not sgs.Self:hasFlag("luazhiheng_used")
-	end
-}
-]]
 luazhiheng = sgs.CreateViewAsSkill{ --创建技能，技能种类为ViewAsSkill。 
 	name = "luazhiheng",
 	n = 998,
+	
+	enabled_at_play=function()
+		return not sgs.Self:hasFlag("luazhiheng_used")
+	end,
+	
 	view_filter = function(self, selected, to_select)
 		return true
 	end,
 	
-	view_as = function(self, cards)--[[
-		if #cards == 1 then
-			local card = cards[1]
-			local new_card =sgs.Sanguosha:cloneCard("snatch", card:getSuit(), card:getNumber())
-			new_card:addSubcard(card:getId())
-			new_card:setSkillName(self:objectName())
+	view_as = function(self, cards)
+		if #cards > 0 then
+			local new_card = luazhiheng_card:clone()
+			local i = 0			
+			--new_card:setSkillName("luazhiheng")
+			while(i < #cards) do
+				i = i + 1
+				local card = cards[i]
+				new_card:addSubcard(card:getId())
+			end
 			return new_card
-		end]]
-		return luazhiheng_card:clone()
+		end
 	end
-}--关于技能的说明将是几乎所有其他帮助文件的重点。此处省略。
+}
 
 --0201
 luacaocao = sgs.General(extension, "luacaocao$", "wei", 4)

@@ -51,3 +51,24 @@ if not done_loading then
 	done_loading = sgs.QVariant(true)
 	sgs.Sanguosha:setProperty("DoneLoading", done_loading)
 end
+
+--OSCS Scenario
+
+function load_extensionssc(just_require)
+	local scripts = sgs.GetFileNames("extensionssc")
+	
+	for _, script in ipairs(scripts) do	
+		if script:match(".+%.lua$") then
+			local scriptfull = "extensionssc/" .. script
+			dofile(scriptfull)
+			--[[
+			local name = script:sub(script:find("%w+"))
+			local module_name = "extensionssc." .. name
+			local loaded = require(module_name)
+			
+			sgs.Sanguosha:addScenario(loaded.extensionsc)]]
+		end
+	end
+end
+
+load_extensionssc()

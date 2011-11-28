@@ -68,13 +68,8 @@ protected:
     QList<const QMetaObject *> metaobjects;
     QList<const Skill *> skills;
     QMap<QString, const CardPattern *> patterns;
-#ifdef OSCS
-public:
     QMultiMap<QString, QString> related_skills;
-protected:
-#else
-    QMultiMap<QString, QString> related_skills;
-#endif
+
     Type type;
 };
 

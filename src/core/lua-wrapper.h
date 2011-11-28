@@ -3,6 +3,13 @@
 
 #include "skill.h"
 
+#include "src/oscs.h"
+#include <QFile>
+
+#ifdef OSCS
+#include "scenario.h"
+#endif
+
 typedef int LuaFunction;
 
 class LuaTriggerSkill: public TriggerSkill{
@@ -105,5 +112,48 @@ public:
     LuaFunction on_use;
     LuaFunction on_effect;
 };
+
+#ifdef OSCS
+class LuaScenario : public Scenario{
+    Q_OBJECT
+/*
+public:
+    LuaScenario(const QString &name);
+    const ScenarioRule *getRule() const;
+    virtual bool exposeRoles() const;
+    LuaFunction roles_exposed;
+    virtual int getPlayerCount() const;
+    LuaFunction player_count;
+    virtual void getRoles(char *roles) const;
+    LuaFunction roles_get;
+    virtual void assign(QStringList &generals, QStringList &roles) const;
+    LuaFunction assign;
+    virtual AI::Relation relationTo(const ServerPlayer *a, const ServerPlayer *b) const;
+    LuaFunction relation_to;
+    virtual void onTagSet(Room *room, const QString &key) const = 0;
+    LuaFunction tag_set;
+    virtual bool generalSelection() const;
+    LuaFunction general_select;
+
+protected:
+    QString lord;
+    QStringList loyalists, rebels, renegades;
+    const LuaScenarioRule *rule;
+*/
+};
+
+class LuaScenarioRule: public ScenarioRule{
+    Q_OBJECT
+/*
+public:
+    LuaScenarioRule(Scenario *scenario);
+
+    virtual int getPriority() const;
+    LuaFunction priority;
+    virtual bool triggerable(const ServerPlayer *target) const;
+    LuaFunction on_trigger;
+*/
+};
+#endif
 
 #endif // LUAWRAPPER_H

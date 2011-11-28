@@ -12,6 +12,8 @@
 #include "package.h"
 #include "room.h"
 #include "roomthread.h"
+//OSCS
+#include "scenario.h"
 
 #include <QDir>
 
@@ -604,8 +606,28 @@ class Package: public QObject{
 public:
     Package(const char *name);
 	
-    QMultiMap<QString, QString> related_skills;
+    //QMultiMap<QString, QString> related_skills;
 };
+
+//OSCS
+class Scenario : public Package
+{
+
+public:
+    Scenario(const char *name);
+    const ScenarioRule *getRule() const;    
+
+    virtual bool exposeRoles() const;
+    virtual int getPlayerCount() const;
+    virtual void getRoles(char *roles) const;
+    virtual void assign(QStringList &generals, QStringList &roles) const;
+    virtual AI::Relation relationTo(const ServerPlayer *a, const ServerPlayer *b) const;
+    virtual void onTagSet(Room *room, const QString &key) const = 0;
+    virtual bool generalSelection() const;
+
+};
+
+//END OSCS
 
 class Engine: public QObject
 {
@@ -811,7 +833,6 @@ public:
     void resetAI(ServerPlayer *player);
     void transfigure(ServerPlayer *player, const char *new_general, bool full_state, bool invoke_start = true);
 	void swapSeat(ServerPlayer *a, ServerPlayer *b);
-    void swapSeat(ServerPlayer *a, ServerPlayer *b);
     lua_State *getLuaState() const;
     void setFixedDistance(Player *from, const Player *to, int distance);
     void reverseFor3v3(const Card *card, ServerPlayer *player, QList<ServerPlayer *> &list);

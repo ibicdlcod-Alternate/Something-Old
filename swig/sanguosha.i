@@ -327,9 +327,7 @@ public:
     void marshal(ServerPlayer *player) const;
 
     void addToPile(const char *pile_name, int card_id, bool open = true);
-
-    void copyFrom(ServerPlayer* sp);
-
+    void gainAnExtraTurn();
 };
 
 %extend ServerPlayer{
@@ -889,7 +887,6 @@ public:
     QList<ServerPlayer *> getOtherPlayers(ServerPlayer *except) const;
     QList<ServerPlayer *> getAllPlayers() const;
     QList<ServerPlayer *> getAlivePlayers() const;
-    void output(const char *message);
     void enterDying(ServerPlayer *player, DamageStruct *reason);
     void killPlayer(ServerPlayer *victim, DamageStruct *reason = NULL);
     void revivePlayer(ServerPlayer *player);

@@ -22,6 +22,8 @@ end
 sgs.ai_skill_use["@@shensu1"]=function(self,prompt)
         self:updatePlayers(true)
 	self:sort(self.enemies,"defense")
+	if self.player:containsTrick("lightning") and self.player:getCards("j"):length()==1
+		and self:hasWizard(self.friends) and not self:hasWizard(self.enemies,true) then return false end
 	
 	local selfSub = self.player:getHp()-self.player:getHandcardNum()
 	local selfDef = getDefense(self.player)
@@ -202,8 +204,8 @@ end
 sgs.ai_skill_askforag.buqu = function(self, card_ids)
 -- find duplicated one or the first
 	for i, card_id in ipairs(card_ids) do
-		for j, card_id2 in sgs.list(card_ids) do
-			if i ~= j and card_id == card_id2 then
+		for j, card_id2 in ipairs(card_ids) do
+			if i ~= j and sgs.Sanguosha:getCard(card_id):getNumber() == sgs.Sanguosha:getCard(card_id2):getNumber() then
 				return card_id
 			end
 		end

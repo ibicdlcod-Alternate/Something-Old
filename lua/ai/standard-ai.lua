@@ -4,10 +4,13 @@ sgs.ai_skill_invoke.jianxiong = function(self, data)
 end
 
 sgs.ai_skill_invoke.jijiang = function(self, data)
-	if self:getCardsNum("Slash")<=0 then
-		return true
+	local cards = self.player:getHandcards()
+	for _, card in sgs.qlist(cards) do
+		if card:inherits("Slash") then
+			return false
+		end
 	end
-	return false
+	if sgs.jijiangsource then return false else return true end
 end
 
 sgs.ai_skill_choice.jijiang = function(self , choices)
@@ -48,6 +51,7 @@ end
 -- hujia
 sgs.ai_skill_invoke.hujia = function(self, data)
 	local cards = self.player:getHandcards()
+	if sgs.hujiasource then return false end
 	for _, friend in ipairs(self.friends_noself) do
 		if friend:getKingdom() == "wei" and self:isEquip("EightDiagram", friend) then return true end
 	end
@@ -161,6 +165,7 @@ sgs.ai_skill_invoke["@guicai"]=function(self,prompt,judge)
 		local cards = sgs.QList2Table(self.player:getHandcards())
 		local card_id = self:getRetrialCardId(cards, judge)
 		if card_id ~= -1 then
+			self.room:writeToConsole(card_id)
 			return "@GuicaiCard=" .. card_id
 		end
 	end

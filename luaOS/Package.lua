@@ -15,7 +15,7 @@
 --QSanguoshaSeintoSlash(Ubun)					US 宇文天启冥神杀StarmK23
 --QSanguoshaSeintoViva(Ubun)					UV 宇文天启冥神杀游神Viva
 --太阳神大乱斗,roxiel等等尚未注册
---编号系统：16^4 对于卡牌：倒数第二位♠~A ♥~B ♦~C ♣~D 最后一位A~E 10~A J~B Q~C K~D
+--编号系统：16^4 对于卡牌：倒数第二位♠~A ♥~B ♦~C ♣~D 最后一位A~1 10~A J~B Q~C K~D
 --卡牌：0~9+A~F+ABCD(♠♥♦♣)+2~E(A,2~10,JQK)
 --武将：0~9+0~9+0~9+0~9
 --剧情：A~F+0~9+0~F+0~F（前两位剧情代号,后两位00为剧情本身,其他空位留作剧情相关卡牌武将）

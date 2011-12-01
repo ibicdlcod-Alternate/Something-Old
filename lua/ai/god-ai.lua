@@ -20,7 +20,8 @@ sgs.ai_skill_use_func["GongxinCard"]=function(card,use,self)
 	if self.player:usedTimes("GongxinCard")>0 then return end
 	self:sort(self.enemies,"handcard")
 
-	return self.enemies[#self.enemies]
+	use.card = card
+	if use.to then use.to:append(self.enemies[#self.enemies]) end
 end
 
 --function shenlubu_ai:useTrickCard(card, use)
@@ -163,7 +164,7 @@ wuqian_skill.getTurnUseCard=function(self)
 
 	if has_enemy and self:getCardsNum("Slash") > 0 then
 		for _, card in sgs.qlist(self.player:getHandcards()) do
-			if card:inherits("Slash") and self:slashIsEffective(card, has_enemy) and self.player:canSlash(enemy) and
+			if card:inherits("Slash") and self:slashIsEffective(card, has_enemy) and self.player:canSlash(has_enemy) and
 				(self:getCardsNum("Analeptic") > 0 or has_enemy:getHp() <= 1) then return sgs.Card_Parse(card_str)
 			elseif card:inherits("Duel") then return sgs.Card_Parse(card_str)
 			end
@@ -401,4 +402,18 @@ sgs.ai_skill_use["@zhiheng"]=function(self,prompt)
 	self:useSkillCard(card,dummy_use)
 	if dummy_use.card then return (dummy_use.card):toString() .. "->." end
 	return "."
+end
+
+sgs.ai_skill_playerchosen.wuhun = function(self, targets)
+	local targetlist=sgs.QList2Table(targets)
+	local target
+	for _, player in ipairs(targetlist) do
+		if self:isEnemy(player) and (not target or target:getHp() < player:getHp()) then
+			target = player
+		end
+	end
+	if target then return target end
+	self:sort(targetlist, "hp")
+	if self.player:getRole() == "loyalist" and targetlist[1]:isLord() then return targetlist[2] end
+	return targetlist[1]
 end

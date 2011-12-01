@@ -668,6 +668,7 @@ function SmartAI:getEnemies(player)
 end
 
 function SmartAI:isFriend(other, another)
+	if not other then self.room:writeToConsole(debug.traceback()) end
 	if another then 
 		if self.lua_ai:isFriend(other) and self.lua_ai:isFriend(another) then return true end
 	end
@@ -1099,7 +1100,8 @@ function SmartAI:slashProhibit(card,enemy)
 			end
 			if mark > 0 then
 				for _,friend in ipairs(self.friends) do
-					if friend:getMark("@nightmare") == mark and (not self:isWeak(friend) or friend:isLord()) then return true end
+					if friend:getMark("@nightmare") == mark and (not self:isWeak(friend) or friend:isLord()) and
+						not (#self.enemies==1 and #self.friends + #self.enemies == self.room:alivePlayerCount()) then return true end
 				end
 			end
 		end
@@ -1109,7 +1111,7 @@ function SmartAI:slashProhibit(card,enemy)
 end
 
 
-function SmartAI:useBasicCard(card, use,no_distance)
+function SmartAI:useBasicCard(card, use, no_distance)
 	if self.player:hasSkill("chengxiang") and self.player:getHandcardNum() < 8 and card:getNumber() < 7 then return end
 	if card:getSkillName() == "wushen" then no_distance = true end
 	if (self.player:getHandcardNum() == 1 
@@ -1159,9 +1161,9 @@ function SmartAI:useBasicCard(card, use,no_distance)
 				self:slashIsEffective(card, enemy) then
 					-- fill the card use struct
 					local anal = self:searchForAnaleptic(use,enemy,card)
-					if anal and not self:isEquip("SilverLion", enemy) then 
+					if anal and not self:isEquip("SilverLion", enemy) and (not use.to or use.to:isEmpty()) then
 						use.card = anal
-						return 
+						return
 					end
 					use.card = card
 					if use.to then use.to:append(enemy) end
@@ -1898,7 +1900,7 @@ function SmartAI:getTurnUse()
     end    
     
     self:fillSkillCards(cards)
-    
+	
     self:sortByUseValue(cards)
     
     if self.player:hasSkill("paoxiao") or 
@@ -1972,7 +1974,7 @@ function SmartAI:activate(use)
 --	self:sortByUsePriority(self.toUse)
 	self:sortByDynamicUsePriority(self.toUse)
 	for _, card in ipairs(self.toUse) do
-		if not self.player:isJilei(card) and not prohibitUseDirectly(card,self.player) then
+		if not self.player:isJilei(card) then
 			local type = card:getTypeId()
 
 			if type == sgs.Card_Basic then
@@ -2406,6 +2408,8 @@ end
 -- @param judge The JudgeStruct that contains the judge information
 -- @return True if it is needed to retrial
 function SmartAI:needRetrial(judge)
+	local reason = judge.reason
+	if reason == "typhoon" or reason == "earthquake" or reason == "volcano" or reason == "mudslide" then return false end
 	if self:isFriend(judge.who) then
 		return not judge:isGood()
 	elseif self:isEnemy(judge.who) then
@@ -2702,10 +2706,7 @@ function SmartAI:askForCard(pattern, prompt, data)
 		else return "." 
 		end	
 	elseif parsedPrompt[1] == "@hujia-jink" then
-		local who = data:toPlayer()
-		if self.player:hasSkill("hujia") and who:hasSkill("hujia") then return "."
-		elseif not self:isFriend(who) then return "."
-		end
+		if not self:isFriend(sgs.hujiasource) then return "." end
 		return self:getCardId("Jink") or "."
 	elseif parsedPrompt[1] == "@lianli-jink" or parsedPrompt[1] == "@lianli-slash" then
 		local players = self.room:getOtherPlayers(self.player)
@@ -2716,10 +2717,7 @@ function SmartAI:askForCard(pattern, prompt, data)
 		if not self:isFriend(target) then return "." end
 		if parsedPrompt[1] then return self:getCardId("Slash") or "." else return self:getCardId("Jink") or "." end
 	elseif parsedPrompt[1] == "@jijiang-slash" then
-		local who = data:toPlayer()
-		if self.player:hasSkill("jijiang") and who:hasSkill("jijiang") then return "."
-		elseif not self:isFriend(who) then return "."
-		end
+		if not self:isFriend(sgs.jijiangsource) then return "." end
 		return self:getCardId("Slash") or "."
 	elseif parsedPrompt[1] == "@weidai-analeptic" then
 		local who = data:toPlayer()
@@ -3011,8 +3009,13 @@ function SmartAI:hasSkill(skill)
 end
 
 function SmartAI:fillSkillCards(cards)
-	for index, card in ipairs(cards) do
-		if prohibitUseDirectly(card, self.player) then table.remove(cards, index) end
+	local i = 1
+	while i <= #cards do
+		if prohibitUseDirectly(cards[i], self.player) then
+			table.remove(cards, i)
+		else
+			i = i + 1
+		end
 	end
     for _,skill in ipairs(sgs.ai_skills) do
         if self:hasSkill(skill) then

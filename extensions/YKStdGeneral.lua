@@ -2,7 +2,7 @@
 --Design: YOKA
 --Code: hypercross ibicdlcod roxiel 【群】皇叔
 --Version：14.01 (After Chibi 14)
---Last Update：2011-12-1 UTC+8
+--Last Update：2011-12-2 10:15 UTC+8
 
 module("extensions.YKStdGeneral", package.seeall)
 
@@ -145,6 +145,25 @@ luakongcheng = sgs.CreateProhibitSkill
 			return card:inherits("Slash") or card:inherits("Duel")
 		end
 	end,
+	--[[
+	警告：一切没有lua化而有(to:hasSkill("kongcheng")) and (to:isKongcheng())的内核技能都会出现无视lua空城的BUG！
+	已知的有：
+	Player::CanSlash player.cpp 593
+		函数涉及 姜维 挑衅 mountainpackage.cpp 576
+		大乔 流离 standard-skillcards.cpp 254
+		刘备 激将 standard-skillcards.cpp 273
+		贾诩 乱武 thicket.cpp 662
+		【倚】夏侯涓 连理【杀】 yitian-package.cpp 492
+		【倚】邓艾 偷渡 yitian-package.cpp 1565
+		【将】凌统 旋风 yjcm-package.cpp 440
+		【将】高顺 陷阵 yjcm-package.cpp 533
+		【将】陈宫 明策 yjcm-package.cpp 650
+	貂蝉 离间 standard-skillcards.cpp 173
+	夏侯渊 神速 wind.cpp 243
+	【智】姜维 异才 wisdompackage.cpp 199
+	【智】孙策 霸王 wisdompackage.cpp 300
+	红颜百合 百合离间 hongyanscenario.cpp 60
+	]]
 }
 
 --0105 赵云

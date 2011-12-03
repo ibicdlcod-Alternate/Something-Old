@@ -1,6 +1,6 @@
 -- this script file defines all functions written by Lua
 -- Global control for Omegaplan MOD
-OMEGAERA = 0
+OMEGAERA = 504161487
 -- trigger skills
 function sgs.CreateTriggerSkill(spec)
 	assert(type(spec.name) == "string")

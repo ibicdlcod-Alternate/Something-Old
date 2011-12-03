@@ -6,7 +6,7 @@
 #include <QNetworkInterface>
 #include <QGraphicsDropShadowEffect>
 
-#include "src/oscs.h"
+#include "oscs.h"
 #include <QFile>
 
 StartScene::StartScene()

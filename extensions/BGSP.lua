@@ -60,5 +60,5 @@ luasp_guanyu:addSkill(luaspwusheng)
 luasp_guanyu:addSkill(luadanqi)
 
 sgs.LoadTranslationTable{
-	["!luasp-guanyu"] = "0806",
+	["#luasp-guanyu"] = "0806",
 }

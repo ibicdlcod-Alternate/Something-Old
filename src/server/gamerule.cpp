@@ -6,7 +6,7 @@
 
 #include <QTime>
 
-#include "src/oscs.h"
+#include "oscs.h"
 #include <QFile>
 
 GameRule::GameRule(QObject *parent)

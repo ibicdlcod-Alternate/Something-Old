@@ -2,7 +2,7 @@
 --Design: YOKA
 --Code: hypercross ibicdlcod roxiel 【群】皇叔
 --Version：14.01 (After Chibi 14)
---Last Update：2011-12-2 10:15 UTC+8
+--Last Update：2011-12-1 22:12 UTC+8
 
 module("extensions.YKStdGeneral", package.seeall)
 
@@ -25,7 +25,7 @@ luarende_card = sgs.CreateSkillCard
         log.type ="#luarende"                                  
         room:sendLog(log)]]
 				
-        local t = room:askForPlayerChosen(source, room:getOtherPlayers(source), "luarende")        
+		local t = room:askForPlayerChosen(source, room:getOtherPlayers(source), "luarende")        
 		room:playSkillEffect("luarende",math.random(1, 2))
 		room:moveCardTo(self, t, sgs.Player_Hand, false)        
         local x = source:getMark("luarendecount")
@@ -81,7 +81,7 @@ luarende = sgs.CreateTriggerSkill
 			room:setPlayerFlag(player, "-luarende_canuse")  --回合结束 让VIEWAS禁用
 		    room:setPlayerMark(player, "luarendecount",0)   --计数清零
 		end
-	end		
+	end
 end,
 }
 
@@ -145,25 +145,6 @@ luakongcheng = sgs.CreateProhibitSkill
 			return card:inherits("Slash") or card:inherits("Duel")
 		end
 	end,
-	--[[
-	警告：一切没有lua化而有(to:hasSkill("kongcheng")) and (to:isKongcheng())的内核技能都会出现无视lua空城的BUG！
-	已知的有：
-	Player::CanSlash player.cpp 593
-		函数涉及 姜维 挑衅 mountainpackage.cpp 576
-		大乔 流离 standard-skillcards.cpp 254
-		刘备 激将 standard-skillcards.cpp 273
-		贾诩 乱武 thicket.cpp 662
-		【倚】夏侯涓 连理【杀】 yitian-package.cpp 492
-		【倚】邓艾 偷渡 yitian-package.cpp 1565
-		【将】凌统 旋风 yjcm-package.cpp 440
-		【将】高顺 陷阵 yjcm-package.cpp 533
-		【将】陈宫 明策 yjcm-package.cpp 650
-	貂蝉 离间 standard-skillcards.cpp 173
-	夏侯渊 神速 wind.cpp 243
-	【智】姜维 异才 wisdompackage.cpp 199
-	【智】孙策 霸王 wisdompackage.cpp 300
-	红颜百合 百合离间 hongyanscenario.cpp 60
-	]]
 }
 
 --0105 赵云
@@ -570,6 +551,30 @@ luatiandu = sgs.CreateTriggerSkill
 	end
 }
 
+luanewyiji = sgs.CreateTriggerSkill
+{--2011终极典藏版遗计 by ibicdlcod
+	name = "luanewyiji",
+	frequency = sgs.Skill_Frequent,
+	events = {sgs.Damaged},
+	
+	on_trigger = function(self, event, player, data)
+		local room = player:getRoom()
+		local damage = data:toDamage()
+		local listt = room:getAlivePlayers()
+		if(not room:askForSkillInvoke(player, "luanewyiji")) then return false end
+		
+		room:playSkillEffect("luanewyiji")
+		
+		for var = 1, damage.damage, 1 do
+			room:doGuanxing(player, room:getNCards(2, false), true)
+			player1 = room:askForPlayerChosen(player, listt, "luanewyiji")
+			player1:drawCards(1)
+			player2 = room:askForPlayerChosen(player, listt, "luanewyiji")
+			player2:drawCards(1)
+		end
+	end
+}
+
 luayiji = sgs.CreateTriggerSkill
 {--遗计 by roxiel, ibicdlcod修复两张牌不能分给两名其他角色的BUG
     name = "luayiji",
@@ -760,6 +765,160 @@ luajiuyuan = sgs.CreateTriggerSkill
 	end
 }
 
+--0302 甘宁
+luaqixi = sgs.CreateViewAsSkill
+{--奇袭 by ibicdlcod
+	name = "luaqixi",
+	n = 1,
+	
+	view_filter = function(self, selected, to_select)
+		return to_select:isBlack()
+	end,
+	
+	view_as = function(self, cards)
+		if #cards == 1 then
+			local card = cards[1]
+			local new_card =sgs.Sanguosha:cloneCard("dismantlement", card:getSuit(), card:getNumber())
+			new_card:addSubcard(card:getId())
+			new_card:setSkillName(self:objectName())
+			return new_card
+		end
+	end
+}
+
+--0303 吕蒙
+luakeji = sgs.CreateTriggerSkill
+{--克己 by ibicdlcod
+	name = "luakeji",
+	events = {sgs.CardResponsed, sgs.PhaseChange},
+	frequency = sgs.Skill_Frequent,
+	
+	on_trigger = function(self, event, player, data)
+		if(event == sgs.CardResponsed) then
+			local card_star = data:toCard()
+			if(card_star:inherits("slash")) then
+				player:setFlags("luakeji_use_slash")
+			end
+			return false
+		elseif(event == sgs.PhaseChange) then
+			if(player:getPhase() == sgs.Player_Start) then
+				player:setFlags("-keji_use_slash")
+			elseif(player:getPhase() == sgs.Player_Discard) then
+				if(player:getSlashCount() == 0 and player:askForSkillInvoke("luakeji") and not player:hasFlag("keji_use_slash")) then
+					return true
+				end
+				return false
+			end
+		end
+	end
+}
+
+--0304 黄盖
+luakurou = sgs.CreateViewAsSkill
+{--苦肉 by ibicdlcod 已知bug:同孙权
+	name = "luakurou",
+	n = 0,
+	
+	view_as = function(self, cards)
+		local card = luakurou_card:clone()
+		return card
+	end
+}
+
+luakurou_card = sgs.CreateSkillCard
+{--苦肉技能卡 by ibicdlcod
+	name = "luakurou_card",
+	target_fixed = true,
+	will_throw = false,
+	
+	on_use = function(self, room, source, targets)
+		room:loseHp(source)
+		if(source:isAlive()) then
+			room:drawCards(source, 2)
+		end
+	end,
+	
+	enabled_at_play = function()
+		return true
+	end
+}
+
+--0305 周瑜
+luayingzi = sgs.CreateTriggerSkill
+{--英姿 by ibicdlcod
+	name = "luayingzi",
+	frequency = sgs.Skill_Frequent,
+	events = {sgs.PhaseChange},
+	
+	on_trigger = function(self, event, player, data)
+		if(player:getPhase() == sgs.Player_NotActive) then
+			player:setFlags("-luayingzi_used")
+			return false
+		end
+		if(not player:getPhase() == sgs.Player_Draw) then return false end
+		if(player:hasFlag("luayingzi_used")) then return false end
+		if(player:askForSkillInvoke("luayingzi")) then
+			player:drawCards(1)
+			player:setFlags("luayingzi_used")
+		end
+		return false
+	end
+}
+
+luafanjian = sgs.CreateViewAsSkill
+{--反间 by ibicdlcod
+	name = "luafanjian",
+	n = 0,
+	
+	view_as = function()
+		local card = luafanjian_card:clone()
+		return card
+	end
+}
+
+luafanjian_card = sgs.CreateSkillCard
+{--反间技能卡 by ibicdlcod unf
+	name = "luafanjian_card",
+	target_fixed = false,
+	will_throw = false,
+	
+	on_effect = function(self, effect)
+		local zhouyu = effect.from
+		local target = effect.to
+		local room = to:getRoom()
+		local card_id = zhouyu:getRandomHandCardId()
+		local card = sgs.Sanguosha:getCard(card_id)
+		local suit = room:askForSuit(target)
+		
+		--LOG
+		
+		room:getThread():delay()
+		
+		if(OMEGAERA) then
+			room:showCard(zhouyu, card_id)
+		else
+			target:obtainCard(card)
+			room:showCard(target, card_id)
+		end
+		if(card:getSuit() ~= suit) then
+			local ddata = sgs.DamageStruct()
+			ddata.card = nil
+			ddata.from = zhouyu
+			ddata.to = target
+			
+			room:damage(ddata)
+		end
+		if(OMEGAERA) then
+			if(target:isAlive()) then target:obtainCard(card) end
+		end
+	end,
+	
+	enabled_at_play = function()
+		return true
+	end
+}
+
+--add Generals
 --0101
 lualiubei = sgs.General(extension, "lualiubei$", "shu", 4)
 lualiubei:addSkill(luarende)
@@ -817,7 +976,7 @@ luaxuchu:addSkill(lualuoyi)
 --0206
 luaguojia = sgs.General(extension, "luaguojia", "wei", 3)
 luaguojia:addSkill(luatiandu)
-luaguojia:addSkill(luayiji)
+luaguojia:addSkill(luanewyiji)
 
 --0207
 luazhenji = sgs.General(extension, "luazhenji", "wei", 3, false)
@@ -829,30 +988,49 @@ luasunquan = sgs.General(extension, "luasunquan$", "wu", 4)
 luasunquan:addSkill(luazhiheng)
 luasunquan:addSkill(luajiuyuan)
 
-sgs.LoadTranslationTable{
-	["!luacaocao"] = "0201", 
-	["!luazhangliao"] = "0204", 
-	["!luaguojia"] = "0206", 
-	["!luaxiahoudun"] = "0203", 
-	["!luasimayi"] = "0202", 
-	["!luaxuchu"] = "0205", 
-	["!luazhenji"] = "0207", 
-	["!lualiubei"] = "0101", 
-	["!luaguanyu"] = "0102", 
-	["!luazhangfei"] = "0103", 
-	["!luazhaoyun"] = "0105", 
-	["!luamachao"] = "0106", 
-	["!luazhugeliang"] = "0104", 
-	["!luahuangyueying"] = "0107", 
-	["!luasunquan"] = "0301", 
-	["!luazhouyu"] = "0305", 
-	["!lualumeng"] = "0303", 
-	["!lualuxun"] = "0307", 
-	["!luaganning"] = "0302", 
-	["!luahuanggai"] = "0304", 
-	["!luadaqiao"] = "0306", 
-	["!luasunshangxiang"] = "0308", 
-	["!lualubu"] = "0402", 
-	["!luahuatuo"] = "0401", 
-	["!luadiaochan"] = "0403",
+--0302
+luaganning = sgs.General(extension, "luaganning", "wu", 4)
+luaganning:addSkill(luaqixi)
+
+--0303
+lualumeng = sgs.General(extension, "lualumeng", "wu", 4)
+lualumeng:addSkill(luakeji)
+
+--0304
+luahuanggai = sgs.General(extension, "luahuanggai", "wu", 4)
+luahuanggai:addSkill(luakurou)
+
+--0305
+luazhouyu = sgs.General(extension, "luazhouyu", "wu", 3)
+luazhouyu:addSkill(luayingzi)
+luazhouyu:addSkill(luafanjian)
+
+--Load translations
+sgs.LoadTranslationTable
+{
+	["#luacaocao"] = "0201", 
+	["#luazhangliao"] = "0204", 
+	["#luaguojia"] = "0206", 
+	["#luaxiahoudun"] = "0203", 
+	["#luasimayi"] = "0202", 
+	["#luaxuchu"] = "0205", 
+	["#luazhenji"] = "0207", 
+	["#lualiubei"] = "0101", 
+	["#luaguanyu"] = "0102", 
+	["#luazhangfei"] = "0103", 
+	["#luazhaoyun"] = "0105", 
+	["#luamachao"] = "0106", 
+	["#luazhugeliang"] = "0104", 
+	["#luahuangyueying"] = "0107", 
+	["#luasunquan"] = "0301", 
+	["#luazhouyu"] = "0305", 
+	["#lualumeng"] = "0303", 
+	["#lualuxun"] = "0307", 
+	["#luaganning"] = "0302", 
+	["#luahuanggai"] = "0304", 
+	["#luadaqiao"] = "0306", 
+	["#luasunshangxiang"] = "0308", 
+	["#lualubu"] = "0402", 
+	["#luahuatuo"] = "0401", 
+	["#luadiaochan"] = "0403",
 }

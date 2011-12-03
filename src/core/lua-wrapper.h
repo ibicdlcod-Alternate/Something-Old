@@ -3,7 +3,7 @@
 
 #include "skill.h"
 
-#include "src/oscs.h"
+#include "oscs.h"
 #include <QFile>
 
 #ifdef OSCS

@@ -8,7 +8,7 @@
 #include "lua.hpp"
 #include "banpairdialog.h"
 
-#include "src/oscs.h"
+#include "oscs.h"
 
 #ifdef AUDIO_SUPPORT
 #ifdef  Q_OS_WIN32
@@ -372,7 +372,7 @@ QString Engine::getVersion() const{
 
 QString Engine::getVersionName() const{
 #ifdef OSCS
-    return tr("OSCS X Beta");
+    return tr("OSCS XV Beta");
 #else
     return tr("Chibi");
 #endif

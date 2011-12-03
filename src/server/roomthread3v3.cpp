@@ -8,7 +8,7 @@
 
 #include <QDateTime>
 
-#include "src/oscs.h"
+#include "oscs.h"
 #include <QFile>
 
 RoomThread3v3::RoomThread3v3(Room *room)

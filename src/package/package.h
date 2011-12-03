@@ -11,7 +11,7 @@ class Player;
 #include <QMap>
 
 #include <QFile>
-#include "src/oscs.h"
+#include "oscs.h"
 
 class CardPattern{
 public:

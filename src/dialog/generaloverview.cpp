@@ -1,7 +1,7 @@
 #include "generaloverview.h"
 #include "engine.h"
 
-#include "src/oscs.h"
+#include "oscs.h"
 #include <QFile>
 
 #ifdef OSCS
@@ -43,7 +43,7 @@ void GeneralOverview::fillGenerals(const QList<const General *> &generals){
 
         QString name, kingdom, gender, max_hp, package;
 #ifdef OSCS
-        QString number = Sanguosha->translate("!" + general->objectName());
+        QString number = Sanguosha->translate("#" + general->objectName());
 #endif
 
         name = Sanguosha->translate(general->objectName());

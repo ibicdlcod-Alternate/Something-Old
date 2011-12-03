@@ -87,8 +87,8 @@ SOURCES += src/main.cpp \
 	src/util/detector.cpp \
 	src/util/nativesocket.cpp \
         src/util/recorder.cpp \
-    src/package/OETanA.cpp \
-    src/package/OETanB.cpp \
+        src/package/OETanA.cpp \
+        src/package/OETanB.cpp \
         swig/sanguosha_wrap.cxx
 
 HEADERS += \
@@ -172,7 +172,7 @@ HEADERS += \
 	src/util/socket.h \
         src/package/OETanA.h \
         src/package/OETanB.h \
-        src/oscs.h
+        oscs.h
 	
 FORMS += src/dialog/cardoverview.ui \
 	src/dialog/configdialog.ui \
@@ -191,6 +191,7 @@ INCLUDEPATH += src/scenario
 INCLUDEPATH += src/server
 INCLUDEPATH += src/ui
 INCLUDEPATH += src/util
+INCLUDEPATH += src #for OMEGASLASH
 
 win32{
     RC_FILE += resource/iconoe.rc #for OMEGASLASH. When change this, delete debug/icon_res.o
@@ -224,4 +225,4 @@ TRANSLATIONS += sanguosha.ts
 TRANSLATIONS += sanguoshaoe.ts # for OMEGASLASH
 
 OTHER_FILES += sanguosha.qss \
-    sanguoshaoe.qss \ #OSCS
+    \ # sanguoshaoe.qss #OSCS

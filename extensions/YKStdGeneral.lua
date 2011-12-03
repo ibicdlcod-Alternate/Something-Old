@@ -18,26 +18,20 @@ luarende_card = sgs.CreateSkillCard
 	
 	on_use = function(self, room, source, targets)
 		source:gainMark("luarendecount", self:subcardsLength())
-		
-		--[[确认此处失效，也无必要
-        local log = sgs.LogMessage()
-        log.from:append(source)
-        log.type ="#luarende"                                  
-        room:sendLog(log)]]
-				
+						
 		local t = room:askForPlayerChosen(source, room:getOtherPlayers(source), "luarende")        
 		room:playSkillEffect("luarende",math.random(1, 2))
 		room:moveCardTo(self, t, sgs.Player_Hand, false)        
-        local x = source:getMark("luarendecount")
-        if  x >= 2 and not source:hasFlag("recovered") then --多于两张且没有回复过的标记，就补血 然后计数清零
-            local recover = sgs.RecoverStruct()   --回复结构体
-            recover.recover = 1  --回复点数
-            recover.who = source   --回复来源
-            room:recover(source,recover)
-        if source:isKongcheng() then                                
-            room:setPlayerFlag(source,"-luarende_canuse")                --空城就禁用技能
-        end        
-        return true
+		local x = source:getMark("luarendecount")
+		if  x >= 2 and not source:hasFlag("recovered") then --多于两张且没有回复过的标记，就补血 然后计数清零
+			local recover = sgs.RecoverStruct()   --回复结构体
+			recover.recover = 1  --回复点数
+			recover.who = source   --回复来源
+			room:recover(source,recover)
+		if source:isKongcheng() then                                
+			room:setPlayerFlag(source,"-luarende_canuse")                --空城就禁用技能
+		end        
+		return true
 	end
 end,
 }
@@ -48,22 +42,22 @@ luarendevs = sgs.CreateViewAsSkill
 	n = 999,
 	
 	view_filter = function(self, selected, to_select)
-        if to_select:isEquipped() then return false end                        --装备不可以使用
-        return true 
+		if to_select:isEquipped() then return false end                        --装备不可以使用
+		return true 
 	end,
 	
 	view_as = function(self, cards)        
-        if #cards == 0 then return end
-        local acard = luarende_card:clone()
-        for var = 1, #cards, 1 do   --将所有选中的牌加入仁德技能牌的Subcards     
-            acard:addSubcard(cards[var])                
-        end
-        acard:setSkillName(self:objectName())
-        return acard        
+		if #cards == 0 then return end
+		local acard = luarende_card:clone()
+		for var = 1, #cards, 1 do   --将所有选中的牌加入仁德技能牌的Subcards     
+			acard:addSubcard(cards[var])                
+		end
+		acard:setSkillName(self:objectName())
+		return acard        
 	end,
 	
 	enabled_at_play = function()
-        return sgs.Self:hasFlag("luarende_canuse")    
+		return sgs.Self:hasFlag("luarende_canuse")    
 	end,
 }
 
@@ -74,12 +68,12 @@ luarende = sgs.CreateTriggerSkill
 	events = {sgs.PhaseChange},
 	
 	on_trigger = function(self, event, player, data)
-        local room = player:getRoom()                
-        if player:getPhase() == sgs.Player_Play then             
+		local room = player:getRoom()                
+		if player:getPhase() == sgs.Player_Play then             
 			room:setPlayerFlag(player, "luarende_canuse")    --回合开始 让VIEWAS可以使用
-        else if player:getPhase() == sgs.Player_Finish then
+		else if player:getPhase() == sgs.Player_Finish then
 			room:setPlayerFlag(player, "-luarende_canuse")  --回合结束 让VIEWAS禁用
-		    room:setPlayerMark(player, "luarendecount",0)   --计数清零
+			room:setPlayerMark(player, "luarendecount",0)   --计数清零
 		end
 	end
 end,
@@ -92,22 +86,22 @@ luawusheng = sgs.CreateViewAsSkill
 	n = 1,
 	
 	view_filter = function(self, selected, to_select)
-        return to_select:isRed() 
+		return to_select:isRed() 
 	end,
 	
 	view_as = function(self, cards)
-        if #cards == 0 then return nil end
+		if #cards == 0 then return nil end
 		if #cards == 1 then         
-            local card = cards[1]
+			local card = cards[1]
 			local acard = sgs.Sanguosha:cloneCard("slash", card:getSuit(), card:getNumber()) 
-            acard:addSubcard(card:getId())
-            acard:setSkillName(self:objectName())
+			acard:addSubcard(card:getId())
+			acard:setSkillName(self:objectName())
 			return acard
-        end
+		end
 	end,
 	
 	enabled_at_play = function()
-        return (sgs.Self:canSlashWithoutCrossbow()) or (sgs.Self:getWeapon() and sgs.Self:getWeapon():className() == "Crossbow")
+		return (sgs.Self:canSlashWithoutCrossbow()) or (sgs.Self:getWeapon() and sgs.Self:getWeapon():className() == "Crossbow")
 	end,
 	
 	enabled_at_response = function(self, player, pattern)
@@ -188,8 +182,8 @@ lualongdan = sgs.CreateViewAsSkill
 	end,
 	
 	enabled_at_play = function() 
-        ldtmp[1] = "slash"
-        return(sgs.Self:canSlashWithoutCrossbow()) or (sgs.Self:getWeapon() and sgs.Self:getWeapon():className() == "Crossbow")
+		ldtmp[1] = "slash"
+		return(sgs.Self:canSlashWithoutCrossbow()) or (sgs.Self:getWeapon() and sgs.Self:getWeapon():className() == "Crossbow")
 	end,
 	
 	enabled_at_response = function(self, player, pattern)
@@ -323,7 +317,6 @@ luafankui = sgs.CreateTriggerSkill
 			room:playSkillEffect("luafankui")
 		end
 	end
-
 }
 
 luaguicai_card = sgs.CreateSkillCard
@@ -339,42 +332,42 @@ luaguicaivs = sgs.CreateViewAsSkill
 	n = 1,
 	
 	view_filter = function(self, selected, to_select)        
-        if not to_select:isEquipped() then return true
-        else return false end
+		if not to_select:isEquipped() then return true
+		else return false end
 	end,
 	
 	view_as = function(self, cards)
-        if #cards == 1 then 
-        local acard = luaguicai_card:clone()        
-        acard:addSubcard(cards[1])        
-        acard:setSkillName("luaguicai")
-        return acard end
+		if #cards == 1 then 
+		local acard = luaguicai_card:clone()        
+		acard:addSubcard(cards[1])        
+		acard:setSkillName("luaguicai")
+		return acard end
 	end,
 	
 	enabled_at_play = function()
-        return false        
+		return false        
 	end,
 	
 	enabled_at_response = function(self,pattern)
-        return pattern == "@@luaguicai" --仅响应 要求一张luaguicai_card        
+		return pattern == "@@luaguicai" --仅响应 要求一张luaguicai_card        
 	end
 }
 
 luaguicai = sgs.CreateTriggerSkill
 {--鬼才 by roxiel
-    name = "luaguicai",
-    events = sgs.AskForRetrial,	--听说这个事件不需要cantrigger
-    view_as_skill = luaguicaivs,
+	name = "luaguicai",
+	events = sgs.AskForRetrial,	--听说这个事件不需要cantrigger
+	view_as_skill = luaguicaivs,
 	
-    on_trigger = function(self, event, player, data)
-        local room = player:getRoom()
-        local simashi = room:findPlayerBySkillName(self:objectName())
-        local judge = data:toJudge()	--获取判定结构体        
+	on_trigger = function(self, event, player, data)
+		local room = player:getRoom()
+		local simashi = room:findPlayerBySkillName(self:objectName())
+		local judge = data:toJudge()	--获取判定结构体        
 		simashi:setTag("Judge",data)	--SET技能拥有者TAG
-        if (room:askForSkillInvoke(simashi, self:objectName()) ~= true) then return false end	--询问发动 可以去掉
+		if (room:askForSkillInvoke(simashi, self:objectName()) ~= true) then return false end	--询问发动 可以去掉
 			local card = room:askForCard(simashi, "@@luaguicai", "@luaguicai", data)				--要求一张luaguicai_card   别忘了@luaguicai是询问字符串     
 			if card ~= nil then  -- 如果打出了        
-                room:throwCard(judge.card) --原判定牌丢弃如果是想要鬼道那样的替换回来就应该改为simashi:obtainCard(judge.card)
+				room:throwCard(judge.card) --原判定牌丢弃如果是想要鬼道那样的替换回来就应该改为simashi:obtainCard(judge.card)
 				judge.card = sgs.Sanguosha:getCard(card:getEffectiveId()) --判定牌更改
 				room:moveCardTo(judge.card, nil, sgs.Player_Special) --移动到判定区
 				
@@ -387,8 +380,8 @@ luaguicai = sgs.CreateTriggerSkill
 				
 				room:sendJudgeResult(judge) 
 			end
-        return false --要FALSE~~
-    end,        
+		return false --要FALSE~~
+	end,        
 }
 
 --0203 夏侯惇
@@ -411,7 +404,7 @@ luaganglie = sgs.CreateTriggerSkill
 			judge.good = false
 			judge.reason = self:objectName()
 			judge.who = player
-
+	
 			room:judge(judge)
 			if(judge:isGood()) then
 				if(not room:askForDiscard(from, "luaganglie", 2, true)) then
@@ -435,7 +428,7 @@ luatuxi_card = sgs.CreateSkillCard
 	name = "luatuxi_card",	
 	target_fixed = false,	
 	will_throw = false,
-
+	
 	filter = function(self, targets, to_select)
 		if(#targets > 1) then return false end
 		
@@ -461,7 +454,7 @@ luatuxi_viewas = sgs.CreateViewAsSkill
 {--突袭视为技 by ibicdlcod
 	name = "luatuxi_viewas",	
 	n = 0,
-
+	
 	view_as = function()
 		return luatuxi_card:clone()		
 	end,
@@ -596,32 +589,32 @@ luanewyiji = sgs.CreateTriggerSkill
 
 luayiji = sgs.CreateTriggerSkill
 {--遗计 by roxiel, ibicdlcod修复两张牌不能分给两名其他角色的BUG
-    name = "luayiji",
-    frequency = sgs.Skill_Frequent,
-    events = {sgs.Damaged},
+	name = "luayiji",
+	frequency = sgs.Skill_Frequent,
+	events = {sgs.Damaged},
 	
-    on_trigger = function(self, event, player, data)
+	on_trigger = function(self, event, player, data)
 		local room = player:getRoom()
 		local damage = data:toDamage()    --获取伤害结构体
 		if(not room:askForSkillInvoke(player, "luayiji"))
 			then return false end
 				
-        room:playSkillEffect("luayiji")  --音效（音效和LOG属于非核心的内容，建议上下空白一行）
+		room:playSkillEffect("luayiji")  --音效（音效和LOG属于非核心的内容，建议上下空白一行）
 			
-        for var = 1, damage.damage, 1 do   --每点伤害执行下面的语句
-            player:drawCards(2)   --先摸（典藏版描述改了，估计以后也得改）
+		for var = 1, damage.damage, 1 do   --每点伤害执行下面的语句
+			player:drawCards(2)   --先摸（典藏版描述改了，估计以后也得改）
 			local hnum = player:getHandcardNum() --手牌数
-            local cdlist = sgs.IntList()   --Int类型的list
-            cdlist:append(player:handCards():at(hnum-1))   --插入刚摸的
-            cdlist:append(player:handCards():at(hnum-2))   --还是插入刚摸的
-            room:askForYiji(player, cdlist)   --这个。。内核自带的一个函数，想必实现遗计神哥花了不少功夫，观星同样
+			local cdlist = sgs.IntList()   --Int类型的list
+			cdlist:append(player:handCards():at(hnum-1))   --插入刚摸的
+			cdlist:append(player:handCards():at(hnum-2))   --还是插入刚摸的
+			room:askForYiji(player, cdlist)   --这个。。内核自带的一个函数，想必实现遗计神哥花了不少功夫，观星同样
 			if(player:getHandcardNum() == hnum-1) then
 				celist = sgs.IntList()
 				celist:append(player:handCards():at(hnum-2))
 				room:askForYiji(player, celist)
 			end
-        end        
-    end
+		end        
+	end
 }
 
 --0207 甄姬
@@ -667,11 +660,11 @@ lualuoshen = sgs.CreateTriggerSkill
 				room:playSkillEffect("lualuoshen")
 				
 				local judge = sgs.JudgeStruct()
-                judge.pattern = sgs.QRegExp("(.*):(spade|club):(.*)")
-                judge.good = true
-                judge.reason = "lualuoshen"
-                judge.who = player
-                room:judge(judge)
+				judge.pattern = sgs.QRegExp("(.*):(spade|club):(.*)")
+				judge.good = true
+				judge.reason = "lualuoshen"
+				judge.who = player
+				room:judge(judge)
 				if(judge:isBad()) then break end
 			end
 		end
@@ -690,17 +683,17 @@ lualuoshen = sgs.CreateTriggerSkill
 --0301 孙权
 luazhiheng_card = sgs.CreateSkillCard
 {--制衡技能卡 by hypercross, ibicdlcod修复getsubcards BUG
-    name = "luazhiheng_card",
+	name = "luazhiheng_card",
 	target_fixed = true,
-    will_throw = true,
-
-    on_use = function(self, room, source, targets)
+	will_throw = true,
+	
+	on_use = function(self, room, source, targets)
 		if(source:isAlive()) then
 			room:drawCards(source, self:subcardsLength())--尼玛#getsubcards坑爹了N天啊
 			room:setPlayerFlag(source, "luazhiheng_used")		
 			room:throwCard(self)
 		end
-    end,
+	end,
 }
 
 luazhiheng = sgs.CreateViewAsSkill
@@ -754,11 +747,11 @@ luajiuyuan = sgs.CreateTriggerSkill
 		if(event == sgs.CardEffected) then
 			local cardeffect = data:toCardEffect()
 			if(effect.card:inherits("Peach") and effect.from:getKingdom() == "wu"
-                   and player ~= effect.from and player:hasFlag("dying")) then
+				and player ~= effect.from and player:hasFlag("dying")) then
 				local index = 0
 				if(effect.from:getGeneral():isMale()) then index = 2 else index = 3 end
 				room:playSkillEffect("jiuyuan", index);
-                player:setFlags("jiuyuan")
+				player:setFlags("jiuyuan")
 				
 				local log = sgs.LogMessage()
 				log.from = player
@@ -776,9 +769,9 @@ luajiuyuan = sgs.CreateTriggerSkill
 		end
 		
 		if(event == sgs.AskForPeachesDone) then
-            if(player:getHp() > 0 and player:hasFlag("jiuyuan")) then
-                room:playSkillEffect("jiuyuan", 4);
-                player:setFlags("-jiuyuan");
+			if(player:getHp() > 0 and player:hasFlag("jiuyuan")) then
+				room:playSkillEffect("jiuyuan", 4);
+				player:setFlags("-jiuyuan");
 			end
 		end
 	end
@@ -975,7 +968,7 @@ lualiuli_card = sgs.CreateSkillCard
 	name = "lualiuli_effect",
 	target_fixed = false,
 	will_throw = true,
-
+	
 	filter = function(self, targets, to_select)
 		if #targets > 0 then return false end
 		if to_select:hasFlag("slash_source") then return false end
@@ -987,7 +980,7 @@ lualiuli_card = sgs.CreateSkillCard
 	
 		return sgs.Self:canSlash(to_select, true)	--其他情况：自己的攻击范围
 	end,
-
+	
 	on_effect = function(self, effect)
 		effect.to:getRoom():setPlayerFlag(effect.to, "lualiuli_target")
 	end
@@ -997,11 +990,11 @@ lualiuli_viewAsSkill = sgs.CreateViewAsSkill
 {--流离视为技 by hypercross
 	name = "lualiuli_viewAs",
 	n = 1,
-
+	
 	view_filter = function(self, selected, to_select)
 		return true
 	end,
-
+	
 	view_as = function(self, cards)
 		if #cards == 0 then return nil end
 		local alualiuli_card = lualiuli_card:clone()	--使用之前创建的skillCard的clone方法来创建新的skillCard
@@ -1009,11 +1002,11 @@ lualiuli_viewAsSkill = sgs.CreateViewAsSkill
 	
 		return alualiuli_card
 	end,
-
+	
 	enabled_at_play = function()
 		return false
 	end,
-
+	
 	enabled_at_response = function(self, player, pattern) 
 		return pattern == "#lualiuli_effect"
 	end
@@ -1024,7 +1017,7 @@ lualiuli_main = sgs.CreateTriggerSkill
 	name = "lualiuli_main",
 	view_as_skill = lualiuli_viewAsSkill,
 	events = {sgs.CardEffected},
-
+	
 	on_trigger = function(self, event, player, data)
 		local room = player:getRoom()
 		local players = room:getOtherPlayers(player)
@@ -1076,7 +1069,7 @@ lualianying = sgs.CreateTriggerSkill
 {--连营 by roxiel
 	name = "lualianying",
 	events = {sgs.CardLost},
-    frequency = sgs.Skill_Frequent,
+	frequency = sgs.Skill_Frequent,
 	
 	on_trigger = function(self, event, player, data)
 		local room = player:getRoom()

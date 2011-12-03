@@ -9,22 +9,22 @@ luaspwusheng = sgs.CreateViewAsSkill
 	n = 1,
 	
 	view_filter = function(self, selected, to_select)
-        return to_select:isRed() 
+		return to_select:isRed() 
 	end,
 	
 	view_as = function(self, cards)
-        if #cards == 0 then return nil end
+		if #cards == 0 then return nil end
 		if #cards == 1 then         
-            local card = cards[1]
+			local card = cards[1]
 			local acard = sgs.Sanguosha:cloneCard("slash", card:getSuit(), card:getNumber()) 
-            acard:addSubcard(card:getId())
-            acard:setSkillName(self:objectName())
+			acard:addSubcard(card:getId())
+			acard:setSkillName(self:objectName())
 			return acard
-        end
+		end
 	end,
 	
 	enabled_at_play = function()
-        return (sgs.Self:canSlashWithoutCrossbow()) or (sgs.Self:getWeapon() and sgs.Self:getWeapon():className() == "Crossbow")
+		return (sgs.Self:canSlashWithoutCrossbow()) or (sgs.Self:getWeapon() and sgs.Self:getWeapon():className() == "Crossbow")
 	end,
 	
 	enabled_at_response = function(self, player, pattern)
@@ -50,9 +50,9 @@ luadanqi = sgs.CreateTriggerSkill
 			room:loseMaxHp(player,1)
 			room:acquireSkill(player,"luamashu")
 			player:addMark("luadanqi")
-		return false
-	end
-end,
+			return false
+		end
+	end,
 }
 
 luasp_guanyu = sgs.General(extension, "luasp-guanyu", "wei", 4)

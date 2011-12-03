@@ -1,8 +1,8 @@
 --SANGUOSHA Standard Version Generals--
---Design: YOKA
---Code: hypercross ibicdlcod roxiel 【群】皇叔
+--Design: YOKA (2011)
+--Code: hypercross ibicdlcod roxiel 【群】皇叔 William915
 --Version：14.01 (After Chibi 14)
---Last Update：2011-12-3 12:30 UTC+8
+--Last Update：Dec 3 2011 20:00 UTC+8
 
 module("extensions.YKStdGeneral", package.seeall)
 
@@ -18,7 +18,7 @@ luarende_card = sgs.CreateSkillCard
 	
 	on_use = function(self, room, source, targets)
 		source:gainMark("luarendecount", self:subcardsLength())
-						
+		
 		local t = room:askForPlayerChosen(source, room:getOtherPlayers(source), "luarende")        
 		room:playSkillEffect("luarende",math.random(1, 2))
 		room:moveCardTo(self, t, sgs.Player_Hand, false)        
@@ -245,7 +245,38 @@ luajizhi = sgs.CreateTriggerSkill
 			player:drawCards(1) 
 		end 
 	end,
-} 
+}
+
+--0101
+lualiubei = sgs.General(extension, "lualiubei$", "shu", 4)
+lualiubei:addSkill(luarende)
+
+--0102
+luaguanyu = sgs.General(extension, "luaguanyu", "shu", 4)
+luaguanyu:addSkill(luawusheng)
+
+--0103
+luazhangfei = sgs.General(extension, "luazhangfei", "shu", 4)
+luazhangfei:addSkill("paoxiao")
+
+--0104
+luazhugeliang = sgs.General(extension, "luazhugeliang", "shu", 4)
+luazhugeliang:addSkill(luaguanxing)
+luazhugeliang:addSkill(luakongcheng)
+
+--0105
+luazhaoyun = sgs.General(extension, "luazhaoyun", "shu", 4)
+luazhaoyun:addSkill(lualongdan)
+
+--0106
+luamachao = sgs.General(extension, "luamachao", "shu", 4)
+luamachao:addSkill(luatieqi)
+luamachao:addSkill(luamashu)
+
+--0107
+luahuangyueying = sgs.General(extension, "luahuangyueying", "shu", 3, false)
+luahuangyueying:addSkill(luajizhi)
+luahuangyueying:addSkill("qicai")
 
 --0201 曹操
 luajianxiong = sgs.CreateTriggerSkill
@@ -348,7 +379,7 @@ luaguicaivs = sgs.CreateViewAsSkill
 		return false        
 	end,
 	
-	enabled_at_response = function(self,pattern)
+	enabled_at_response = function(self, player, pattern)
 		return pattern == "@@luaguicai" --仅响应 要求一张luaguicai_card        
 	end
 }
@@ -463,7 +494,7 @@ luatuxi_viewas = sgs.CreateViewAsSkill
 		return false
 	end,
 	
-	enabled_at_response = function(player, pattern)
+	enabled_at_response = function(self, player, pattern)
 		return pattern == "@@luatuxi_main"
 	end
 }
@@ -598,9 +629,9 @@ luayiji = sgs.CreateTriggerSkill
 		local damage = data:toDamage()    --获取伤害结构体
 		if(not room:askForSkillInvoke(player, "luayiji"))
 			then return false end
-				
+		
 		room:playSkillEffect("luayiji")  --音效（音效和LOG属于非核心的内容，建议上下空白一行）
-			
+		
 		for var = 1, damage.damage, 1 do   --每点伤害执行下面的语句
 			player:drawCards(2)   --先摸（典藏版描述改了，估计以后也得改）
 			local hnum = player:getHandcardNum() --手牌数
@@ -679,6 +710,39 @@ lualuoshen = sgs.CreateTriggerSkill
 		end
 	end
 }
+
+--0201
+luacaocao = sgs.General(extension, "luacaocao$", "wei", 4)
+luacaocao:addSkill(luajianxiong)
+luacaocao:addSkill(luahujia)
+
+--0202
+luasimayi = sgs.General(extension, "luasimayi", "wei", 3)
+luasimayi:addSkill(luafankui)
+luasimayi:addSkill(luaguicai)
+
+--0203
+luaxiahoudun = sgs.General(extension, "luaxiahoudun", "wei", 4)
+luaxiahoudun:addSkill(luaganglie)
+
+--0204
+luazhangliao = sgs.General(extension, "luazhangliao", "wei", 4)
+luazhangliao:addSkill(luatuxi_main)
+
+--0205
+luaxuchu = sgs.General(extension, "luaxuchu", "wei", 4)
+luaxuchu:addSkill(lualuoyi_buff)
+luaxuchu:addSkill(lualuoyi)
+
+--0206
+luaguojia = sgs.General(extension, "luaguojia", "wei", 3)
+luaguojia:addSkill(luatiandu)
+luaguojia:addSkill(luanewyiji)
+
+--0207
+luazhenji = sgs.General(extension, "luazhenji", "wei", 3, false)
+luazhenji:addSkill(luaqingguo)
+luazhenji:addSkill(lualuoshen)
 
 --0301 孙权
 luazhiheng_card = sgs.CreateSkillCard
@@ -1083,71 +1147,74 @@ lualianying = sgs.CreateTriggerSkill
 }
 
 --0308 孙尚香（暂时不允许SP变身）
+luajieyin_card = sgs.CreateSkillCard
+{--结姻技能卡 by ibicdlcod 和制衡同样BUG
+	name = "luajieyin_card",
+	target_fixed = false,
+	will_throw = true,
+	once = true,
+	
+	filter = function(self, targets, to_select, player)
+		if(#targets >= 1) then return false end
+		return to_select:getGeneral():isMale() and to_select:isWounded()
+	end,
+	
+	on_effect = function(self, effect)
+		local room = effect.from:getRoom()
+		
+		local recov = sgs.RecoverStruct()
+		recov.recover = 1
+		recov.card = self
+		recov.who = effect.from
+		
+		room:recover(effect.from, recov)
+		room:recover(effect.to, recov)
+		
+		room:playSkillEffect("luajieyin", math.random(1,2))
+		room:setPlayerFlag(effect.from, "luajieyin-used")
+	end
+}
 
---add Generals
---0101
-lualiubei = sgs.General(extension, "lualiubei$", "shu", 4)
-lualiubei:addSkill(luarende)
+luajieyin = sgs.CreateViewAsSkill
+{--结姻 by ibicdlcod
+	name = "luajieyin",
+	n = 2,
+	
+	enabled_at_play = function()
+		return not sgs.Self:hasFlag("luajieyin-used")
+	end,
+	
+	view_filter = function(self, selected, to_select)
+		return not to_select:isEquipped()
+	end,
+	
+	view_as = function(self, cards)
+		if #cards ~= 2 then return nil end
+		local new_card = luajieyin_card:clone()
+		new_card:addSubcard(cards[1])
+		new_card:addSubcard(cards[2])
+		new_card:setSkillName(self:objectName())
+		return new_card
+	end
+}
 
---0102
-luaguanyu = sgs.General(extension, "luaguanyu", "shu", 4)
-luaguanyu:addSkill(luawusheng)
-
---0103
-luazhangfei = sgs.General(extension, "luazhangfei", "shu", 4)
-luazhangfei:addSkill("paoxiao")
-
---0104
-luazhugeliang = sgs.General(extension, "luazhugeliang", "shu", 4)
-luazhugeliang:addSkill(luaguanxing)
-luazhugeliang:addSkill(luakongcheng)
-
---0105
-luazhaoyun = sgs.General(extension, "luazhaoyun", "shu", 4)
-luazhaoyun:addSkill(lualongdan)
-
---0106
-luamachao = sgs.General(extension, "luamachao", "shu", 4)
-luamachao:addSkill(luatieqi)
-luamachao:addSkill(luamashu)
-
---0107
-luahuangyueying = sgs.General(extension, "luahuangyueying", "shu", 3, false)
-luahuangyueying:addSkill(luajizhi)
-luahuangyueying:addSkill("qicai")
-
---0201
-luacaocao = sgs.General(extension, "luacaocao$", "wei", 4)
-luacaocao:addSkill(luajianxiong)
-luacaocao:addSkill(luahujia)
-
---0202
-luasimayi = sgs.General(extension, "luasimayi", "wei", 3)
-luasimayi:addSkill(luafankui)
-luasimayi:addSkill(luaguicai)
-
---0203
-luaxiahoudun = sgs.General(extension, "luaxiahoudun", "wei", 4)
-luaxiahoudun:addSkill(luaganglie)
-
---0204
-luazhangliao = sgs.General(extension, "luazhangliao", "wei", 4)
-luazhangliao:addSkill(luatuxi_main)
-
---0205
-luaxuchu = sgs.General(extension, "luaxuchu", "wei", 4)
-luaxuchu:addSkill(lualuoyi_buff)
-luaxuchu:addSkill(lualuoyi)
-
---0206
-luaguojia = sgs.General(extension, "luaguojia", "wei", 3)
-luaguojia:addSkill(luatiandu)
-luaguojia:addSkill(luanewyiji)
-
---0207
-luazhenji = sgs.General(extension, "luazhenji", "wei", 3, false)
-luazhenji:addSkill(luaqingguo)
-luazhenji:addSkill(lualuoshen)
+luaxiaoji = sgs.CreateTriggerSkill
+{--枭姬 by ibicdlcod
+	name = "luaxiaoji",
+	events = {sgs.CardLost},
+	frequency = sgs.Skill_Frequent,
+	
+	on_trigger = function(self, event, player, data)
+		move = data:toCardMove()
+		if(move.from_place == sgs.Player_Equip) then
+			local room = player:getRoom()
+			if(room:askForSkillInvoke(player, "luaxiaoji")) then
+				room:playSkillEffect("luaxiaoji")
+				player:drawCards(2)
+			end
+		end
+	end
+}
 
 --0301
 luasunquan = sgs.General(extension, "luasunquan$", "wu", 4)
@@ -1180,6 +1247,212 @@ luadaqiao:addSkill(lualiuli_main)
 lualuxun = sgs.General(extension, "lualuxun", "wu", 3)
 lualuxun:addSkill(luaqianxun)
 lualuxun:addSkill(lualianying)
+
+--0308
+luasunshangxiang = sgs.General(extension, "luasunshangxiang", "wu", 3, false)
+luasunshangxiang:addSkill(luajieyin)
+luasunshangxiang:addSkill(luaxiaoji)
+
+--0401 华佗
+luajijiu = sgs.CreateViewAsSkill
+{--急救 by ibicdlcod and William915
+	name = "luajijiu",
+	n = 1,
+	
+	enabled_at_play = function()
+		return false
+	end,
+	
+	enabled_at_response = function(self, player, pattern)
+		return player:getPhase() == sgs.Player_NotActive and string.find(pattern, "peach")
+	end,
+	
+	view_filter = function(self, selected, to_select)
+		return to_select:isRed()
+	end,
+	
+	view_as = function(self, cards)
+		if(#cards ~= 1) then return nil end
+		local card = cards[1]
+		local peach = sgs.Sanguosha:cloneCard("peach", card:getSuit(), card:getNumber())
+		peach:addSubcard(card)
+		peach:setSkillName(self:objectName())
+		return peach
+	end
+}
+
+luaqingnang = sgs.CreateViewAsSkill
+{--青囊 by ibicdlcod
+	name = "luaqingnang",
+	n = 1,
+	
+	enabled_at_play = function()
+		return not sgs.Self:hasFlag("luaqingnang-used")
+	end,
+	
+	view_filter = function(self, selected, to_select)
+		return not to_select:isEquipped()
+	end,
+	
+	view_as = function(self, cards)
+		if(#cards ~= 1) then return nil end
+		local qcard = luaqingnang_card:clone()
+		qcard:addSubcard(cards[1])
+		qcard:setSkillName(self:objectName())
+		return qcard
+	end
+}
+
+luaqingnang_card = sgs.CreateSkillCard
+{--青囊技能卡 by ibicdlcod
+	name = "luaqingnang_card",
+	target_fixed = false,
+	will_throw = true,
+	
+	filter = function(self, targets, to_select, player)
+		return #targets == 0 and to_select:isWounded()
+	end,
+	
+	on_use = function(self, room, source, targets)
+		room:throwCard(self)
+		local target = targets[1]
+		effect = sgs.CardEffectStruct()
+		effect.card = self
+		effect.from = source
+		effect.to = target
+		room:cardEffect(effect)
+		room:setPlayerFlag(source, "luaqingnang-used")
+	end,
+	
+	on_effect = function(self, effect)
+		local recov = sgs.RecoverStruct()
+		recov.card = self
+		recov.who = effect.from
+		effect.to:getRoom():recover(effect.to, recov)
+	end
+}
+
+--0402 吕布
+luawushuang = sgs.CreateTriggerSkill
+{--无双 by ibicdlcod(决斗部分，坐等LUA【决斗】)(尼玛没有DummyCard?受不了了。。。目前无效)
+	name = "luawushuang",
+	events = {sgs.SlashProceed},
+	frequency = sgs.Skill_Compulsory,
+	
+	on_trigger = function(self, event, player, data)
+		local effect = data:toSlashEffect()
+		local room = player:getRoom()
+		room:playSkillEffect("luawushuang")
+		local slasher = player:objectName()
+		
+		local first_jink = nil
+		local second_jink = nil
+		first_jink = room:askForCard(effect.to, "jink", "@luawushuang-jink-1:" + slasher)
+		if(first_jink)then
+			second_jink = room:askForCard(effect.to, "jink", "@luawushuang-jink-2:" + slasher)
+		end
+		local jink = nil
+		if(first_jink and second_jink) then
+			jink = sgs.Sanguosha:cloneCard("jink", sgs.Card_NoSuit, 0)
+			jink:addSubcard(first_jink)
+			jink:addSubcard(second_jink)
+		end
+		
+		room:slashResult(effect, jink)
+		return true
+	end
+}
+
+--0403 貂蝉
+luabiyue = sgs.CreateTriggerSkill
+{--闭月 by ibicdlcod
+	name = "luabiyue",
+	events = {sgs.PhaseChange},
+	frequency = sgs.Skill_Frequent,
+	
+	on_trigger = function(self, event, player, data)
+		if(player:getPhase() == sgs.Player_Finish) then
+			local room = player:getRoom()
+			if(room:askForSkillInvoke(player, "luabiyue")) then
+				room:playSkillEffect("luabiyue")
+				player:drawCards(1)
+			end
+		end
+		return false
+	end
+}
+
+lualijian = sgs.CreateViewAsSkill
+{--离间 by ibicdlcod
+	name = "lualijian",
+	n = 1,
+	
+	enabled_at_play = function()
+		return not sgs.Self:hasFlag("lualijian-used")
+	end,
+	
+	view_filter = function()
+		return true
+	end,
+	
+	view_as = function(self, cards)
+		--if(#cards ~= 1) then return nil end
+		--local lcard = lualijian_card:clone()
+		--lcard:addSubcard(cards[1])
+		--lcard:setSkillName(self:objectName())
+		return nil--lcard
+	end
+}
+
+lualijian_card = sgs.CreateSkillCard
+{--离间技能卡 by hypercross and ibicdlcod
+	name = "lualijian-card",
+	once = true,
+	target_fixed = false,
+	will_throw = true,
+	
+	filter = function(self, targets, to_select)
+		if(not to_select:getGeneral():isMale()) or #targets > 1 then return false end
+		if(#targets == 0 and to_select:hasSkill("luakongcheng") and to_select:isKongcheng()) then return false end
+		return true
+	end,
+	
+	feasible = function(self, targets)
+		return #targets == 2
+	end,
+	
+	on_use = function(self, room, source, targets)
+		room:askForSkillInvoke(source, "lualijian")
+		room:throwCard(self)
+		local to = targets[1]
+		local from = target[2]
+		
+		local duel = sgs.Sanguosha:cloneCard("duel", sgs.Card_NoSuit, 0)
+		duel:setSkillName("lualijian")
+		duel:setCancelable(false)
+		
+		local use = sgs.CardUseStruct()
+		use.from = from
+		use.to:append(to)
+		use.card = duel
+		room:usecard(use)
+		room:setPlayerFlag(source, "lualijian-used")
+	end
+}
+
+--0401
+luahuatuo = sgs.General(extension, "luahuatuo", "qun", 3)
+luahuatuo:addSkill(luajijiu)
+luahuatuo:addSkill(luaqingnang)
+
+--0402
+lualubu = sgs.General(extension, "lualubu", "qun", 4)
+lualubu:addSkill(luawushuang)
+
+--0403
+luadiaochan = sgs.General(extension, "luadiaochan", "qun", 3, false)
+luadiaochan:addSkill(luabiyue)
+luadiaochan:addSkill(lualijian)
 
 --Load translations
 sgs.LoadTranslationTable

@@ -2,7 +2,7 @@
 --Design: YOKA
 --Code: hypercross ibicdlcod roxiel 【群】皇叔
 --Version：14.01 (After Chibi 14)
---Last Update：2011-12-1 22:12 UTC+8
+--Last Update：2011-12-3 12:30 UTC+8
 
 module("extensions.YKStdGeneral", package.seeall)
 
@@ -135,6 +135,25 @@ luaguanxing = sgs.CreateTriggerSkill
 			room:doGuanxing(player,room:getNCards(x),false)
 		end
 	end,
+	--[[
+	警告：一切没有lua化而有(to:hasSkill("kongcheng")) and (to:isKongcheng())的内核技能都会出现无视lua空城的BUG！
+	已知的有：
+	Player::CanSlash player.cpp 593
+		函数涉及 姜维 挑衅 mountainpackage.cpp 576
+		大乔 流离 standard-skillcards.cpp 254
+		刘备 激将 standard-skillcards.cpp 273
+		贾诩 乱武 thicket.cpp 662
+		【倚】夏侯涓 连理【杀】 yitian-package.cpp 492
+		【倚】邓艾 偷渡 yitian-package.cpp 1565
+		【将】凌统 旋风 yjcm-package.cpp 440
+		【将】高顺 陷阵 yjcm-package.cpp 533
+		【将】陈宫 明策 yjcm-package.cpp 650
+	貂蝉 离间 standard-skillcards.cpp 173
+	夏侯渊 神速 wind.cpp 243
+	【智】姜维 异才 wisdompackage.cpp 199
+	【智】孙策 霸王 wisdompackage.cpp 300
+	红颜百合 百合离间 hongyanscenario.cpp 60
+	]]
 }
 
 luakongcheng = sgs.CreateProhibitSkill
@@ -701,8 +720,8 @@ luazhiheng = sgs.CreateViewAsSkill
 				i = i + 1
 				local card = cards[i]
 				new_card:addSubcard(card:getId())
-			end						
-			new_card:setSkillName("luazhiheng")
+			end
+			new_card:setSkillName(self:objectName())
 			return new_card
 		else return nil
 		end
@@ -820,7 +839,8 @@ luakurou = sgs.CreateViewAsSkill
 	n = 0,
 	
 	view_as = function(self, cards)
-		local card = luakurou_card:clone()
+		local card = luakurou_card:clone()		
+		card:setSkillName(self:objectName())
 		return card
 	end
 }
@@ -870,27 +890,37 @@ luafanjian = sgs.CreateViewAsSkill
 	name = "luafanjian",
 	n = 0,
 	
-	view_as = function()
+	enabled_at_play = function()
+		return not sgs.Self:hasFlag("luafanjianused") 
+	end,
+	
+	view_as = function(self, cards)
 		local card = luafanjian_card:clone()
+		card:setSkillName(self:objectName())
 		return card
 	end
 }
 
 luafanjian_card = sgs.CreateSkillCard
-{--反间技能卡 by ibicdlcod unf
+{--反间技能卡 by ibicdlcod BUG同制衡
 	name = "luafanjian_card",
 	target_fixed = false,
 	will_throw = false,
+	once = true,
 	
 	on_effect = function(self, effect)
 		local zhouyu = effect.from
 		local target = effect.to
-		local room = to:getRoom()
+		local room = zhouyu:getRoom()
 		local card_id = zhouyu:getRandomHandCardId()
 		local card = sgs.Sanguosha:getCard(card_id)
 		local suit = room:askForSuit(target)
 		
-		--LOG
+		local log = sgs.LogMessage()  --LOG 以下是改判定专用的TYPE
+		log.type = "#ChooseSuit"
+		log.from = target
+		log.arg = sgs.Card_Suit2String(suit)
+		room:sendLog(log)
 		
 		room:getThread():delay()
 		
@@ -911,12 +941,155 @@ luafanjian_card = sgs.CreateSkillCard
 		if(OMEGAERA) then
 			if(target:isAlive()) then target:obtainCard(card) end
 		end
+		room:setPlayerFlag(zhouyu, "luafanjianused")
 	end,
 	
 	enabled_at_play = function()
 		return true
 	end
 }
+
+--0306 大乔
+luaguose = sgs.CreateViewAsSkill
+{--国色 by ibicdlcod
+	name = "luaguose",
+	n = 1,
+	
+	view_filter = function(self, selected, to_select)
+		return to_select:getSuit() == sgs.Card_Diamond
+	end,
+	
+	view_as = function(self, cards)
+		if #cards == 1 then
+			local card = cards[1]
+			local new_card = sgs.Sanguosha:cloneCard("indulgence", card:getSuit(), card:getNumber())
+			new_card:addSubcard(card:getId())
+			new_card:setSkillName(self:objectName())
+			return new_card
+		end
+	end
+}
+
+lualiuli_card = sgs.CreateSkillCard
+{--流离技能卡 by hypercross
+	name = "lualiuli_effect",
+	target_fixed = false,
+	will_throw = true,
+
+	filter = function(self, targets, to_select)
+		if #targets > 0 then return false end
+		if to_select:hasFlag("slash_source") then return false end
+	
+		local card_id = self:getSubcards()[1]
+		if sgs.Self:getWeapon() and sgs.Self:getWeapon():getId() == card_id then 
+			return sgs.Self:distanceTo(to_select) <= 1	--如果拿来流离的牌正好是自己的武器，则只能对距离1以内的使用
+		end
+	
+		return sgs.Self:canSlash(to_select, true)	--其他情况：自己的攻击范围
+	end,
+
+	on_effect = function(self, effect)
+		effect.to:getRoom():setPlayerFlag(effect.to, "lualiuli_target")
+	end
+}
+
+lualiuli_viewAsSkill = sgs.CreateViewAsSkill
+{--流离视为技 by hypercross
+	name = "lualiuli_viewAs",
+	n = 1,
+
+	view_filter = function(self, selected, to_select)
+		return true
+	end,
+
+	view_as = function(self, cards)
+		if #cards == 0 then return nil end
+		local alualiuli_card = lualiuli_card:clone()	--使用之前创建的skillCard的clone方法来创建新的skillCard
+		alualiuli_card:addSubcard(cards[1])
+	
+		return alualiuli_card
+	end,
+
+	enabled_at_play = function()
+		return false
+	end,
+
+	enabled_at_response = function(self, player, pattern) 
+		return pattern == "#lualiuli_effect"
+	end
+}
+
+lualiuli_main = sgs.CreateTriggerSkill
+{--流离触发技 by hypercross
+	name = "lualiuli_main",
+	view_as_skill = lualiuli_viewAsSkill,
+	events = {sgs.CardEffected},
+
+	on_trigger = function(self, event, player, data)
+		local room = player:getRoom()
+		local players = room:getOtherPlayers(player)
+		local effect = data:toCardEffect()
+		
+		if effect.card:inherits("Slash") and (not player:isNude()) and room:alivePlayerCount() > 2 then
+			local canInvoke
+		
+			for _,aplayer in sgs.qlist(players) do
+				if player:canSlash(aplayer) then 
+					canInvoke = true
+				end
+			end
+		
+			if not canInvoke then return end
+		
+			local prompt = "#lualiuli_effect:" .. effect.from:objectName()
+			room:setPlayerFlag(effect.from, "slash_source")
+			if room:askForUseCard(player, "#lualiuli_effect", prompt) then 
+				room:output("ha?")
+				for _,aplayer in sgs.qlist(players) do
+					if aplayer:hasFlag("lualiuli_target") then 
+						room:setPlayerFlag(effect.from,"-slash_source")
+						room:setPlayerFlag(aplayer,"-lualiuli_target")
+						effect.to=aplayer
+					
+						room:cardEffect(effect)
+						return true
+					end
+				end
+			end		
+		end
+	end
+}
+
+--0307 陆逊
+luaqianxun = sgs.CreateProhibitSkill
+{--谦逊 by roxiel
+	name = "luaqianxun",
+	
+	is_prohibited = function(self, from, to, card)
+		if(to:hasSkill(self:objectName())) then
+			return (card:inherits("Snatch") or card:inherits("Indulgence")) --不能成为过河拆桥和乐不思蜀的目标 
+		end
+	end
+}
+
+lualianying = sgs.CreateTriggerSkill
+{--连营 by roxiel
+	name = "lualianying",
+	events = {sgs.CardLost},
+    frequency = sgs.Skill_Frequent,
+	
+	on_trigger = function(self, event, player, data)
+		local room = player:getRoom()
+		local move = data:toCardMove()		
+		if player:isKongcheng() and move.from_place == sgs.Player_Hand then   --若空了城且从手里被拿走的     
+			if room:askForSkillInvoke(player, self:objectName()) == true then 
+				player:drawCards(1)
+			end	
+		end	
+	end,
+}
+
+--0308 孙尚香（暂时不允许SP变身）
 
 --add Generals
 --0101
@@ -1004,6 +1177,16 @@ luahuanggai:addSkill(luakurou)
 luazhouyu = sgs.General(extension, "luazhouyu", "wu", 3)
 luazhouyu:addSkill(luayingzi)
 luazhouyu:addSkill(luafanjian)
+
+--0306
+luadaqiao = sgs.General(extension, "luadaqiao", "wu", 3, false)
+luadaqiao:addSkill(luaguose)
+luadaqiao:addSkill(lualiuli_main)
+
+--0307
+lualuxun = sgs.General(extension, "lualuxun", "wu", 3)
+lualuxun:addSkill(luaqianxun)
+lualuxun:addSkill(lualianying)
 
 --Load translations
 sgs.LoadTranslationTable

@@ -17,9 +17,9 @@
 
 --以下为大乔流离技能的实现：
 
-liuli_card=sgs.CreateSkillCard{
+lualiuli_card=sgs.CreateSkillCard{
 
-name="liuli_effect",
+name="lualiuli_effect",
 
 target_fixed=false,
 
@@ -40,14 +40,14 @@ filter=function(self,targets,to_select)
 end,
 
 on_effect=function(self,effect)
-	effect.to:getRoom():setPlayerFlag(effect.to,"liuli_target")
+	effect.to:getRoom():setPlayerFlag(effect.to,"lualiuli_target")
 end
 
 }
 
-liuli_viewAsSkill=sgs.CreateViewAsSkill{
+lualiuli_viewAsSkill=sgs.CreateViewAsSkill{
 
-name="liuli_viewAs",
+name="lualiuli_viewAs",
 
 n=1,
 
@@ -57,11 +57,11 @@ end,
 
 view_as=function(self, cards)
 	if #cards==0 then return nil end
-	local aliuli_card=liuli_card:clone()
+	local alualiuli_card=lualiuli_card:clone()
 	--使用之前创建的skillCard的clone方法来创建新的skillCard
-	aliuli_card:addSubcard(cards[1])
+	alualiuli_card:addSubcard(cards[1])
 	
-	return aliuli_card
+	return alualiuli_card
 end,
 
 enabled_at_play=function()
@@ -69,16 +69,16 @@ enabled_at_play=function()
 end,
 
 enabled_at_response=function()
-	return sgs.Self:getPattern()=="#liuli_effect"
+	return sgs.Self:getPattern()=="#lualiuli_effect"
 	--仅在询问流离时可以发动此技能
 end
 }
 
-liuli_triggerSkill=sgs.CreateTriggerSkill{
+lualiuli_triggerSkill=sgs.CreateTriggerSkill{
 
-name="liuli_main",
+name="lualiuli_main",
 
-view_as_skill=liuli_viewAsSkill,
+view_as_skill=lualiuli_viewAsSkill,
 
 events={sgs.CardEffected},
 
@@ -100,14 +100,14 @@ on_trigger=function(self,event,player,data)
 		
 		if not canInvoke then return end
 		
-		local prompt="#liuli_effect:"..effect.from:objectName()
+		local prompt="#lualiuli_effect:"..effect.from:objectName()
 		room:setPlayerFlag(effect.from,"slash_source")
-		if room:askForUseCard(player,"#liuli_effect",prompt) then 
+		if room:askForUseCard(player,"#lualiuli_effect",prompt) then 
 			room:output("ha?")
 			for _,aplayer in sgs.qlist(players) do
-				if aplayer:hasFlag("liuli_target") then 
+				if aplayer:hasFlag("lualiuli_target") then 
 					room:setPlayerFlag(effect.from,"-slash_source")
-					room:setPlayerFlag(aplayer,"-liuli_target")
+					room:setPlayerFlag(aplayer,"-lualiuli_target")
 					effect.to=aplayer
 					
 					room:cardEffect(effect)
@@ -122,9 +122,9 @@ end,
 }
 
 sgs.LoadTranslationTable{
-	["liuli_main"] = "lua流离",
-	[":liuli_main"] = "和流离技能描述一摸一样",
-	["#liuli_effect"] = "和流离的询问字串一摸一样",
+	["lualiuli_main"] = "lua流离",
+	[":lualiuli_main"] = "和流离技能描述一摸一样",
+	["#lualiuli_effect"] = "和流离的询问字串一摸一样",
 }
 --翻译代码
 

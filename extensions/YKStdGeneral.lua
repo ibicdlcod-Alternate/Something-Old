@@ -778,7 +778,7 @@ luazhiheng = sgs.CreateViewAsSkill
 				local card = cards[i]
 				new_card:addSubcard(card:getId())
 			end
-			new_card:setSkillName(self:objectName())
+			new_card:setSkillName("luazhiheng")
 			return new_card
 		else return nil
 		end
@@ -1282,7 +1282,7 @@ luajijiu = sgs.CreateViewAsSkill
 }
 
 luaqingnang = sgs.CreateViewAsSkill
-{--青囊 by ibicdlcod
+{--青囊 by ibicdlcod 和制衡同样BUG
 	name = "luaqingnang",
 	n = 1,
 	
@@ -1334,33 +1334,62 @@ luaqingnang_card = sgs.CreateSkillCard
 
 --0402 吕布
 luawushuang = sgs.CreateTriggerSkill
-{--无双 by ibicdlcod(决斗部分，坐等LUA【决斗】)(尼玛没有DummyCard?受不了了。。。目前无效)
+{--无双 by roxiel, William915修复【杀】无效的BUG
 	name = "luawushuang",
-	events = {sgs.SlashProceed},
-	frequency = sgs.Skill_Compulsory,
+	events = {sgs.SlashProceed, sgs.CardEffected},
+	frequency = sgs.Skill_Compulsory, --锁定
+	
+	can_trigger = function(self, player)
+		return true
+	end,
 	
 	on_trigger = function(self, event, player, data)
-		local effect = data:toSlashEffect()
 		local room = player:getRoom()
-		room:playSkillEffect("luawushuang")
-		local slasher = player:objectName()
-		
-		local first_jink = nil
-		local second_jink = nil
-		first_jink = room:askForCard(effect.to, "jink", "@luawushuang-jink-1:" + slasher)
-		if(first_jink)then
-			second_jink = room:askForCard(effect.to, "jink", "@luawushuang-jink-2:" + slasher)
+		if(event == sgs.SlashProceed) then
+			local effect = data:toSlashEffect()		
+			if not effect.from:hasSkill(self:objectName()) then return false end 
+			room:playSkillEffect("luawushuang")
+			local firstjink, secondjink = nil, nil
+			local slasher = player:objectName()
+			firstjink = room:askForCard(effect.to, "jink", "@luawushuang-jink-1:"..slasher, data)
+			if firstjink ~= nil then
+				secondjink = room:askForCard(effect.to, "jink", "@luawushuang-jink-1:"..slasher, data)
+			end
+			local jink = nil
+			if (firstjink ~= nil and secondjink ~= nil) then
+				jink = sgs.Sanguosha:cloneCard("DummyCard", 0, 0)
+				jink:addSubcard(firstjink)
+				jink:addSubcard(secondjink)
+				room:slashResult(effect, jink)
+			return true
+		end	
+		elseif(event == sgs.CardEffected) then
+			local effect = data:toCardEffect()
+			if not effect.card:inherits("Duel") then return end	
+			local first,second = effect.to, effect.from
+			room:setEmotion(first, "duel-a")
+			room:setEmotion(second, "duel-b")
+			while true do
+				if(second:hasSkill(self:objectName())) then
+					room:playSkillEffect("luawushuang")
+					local slash = room:askForCard(first, "slash", "@luawushuang-slash-1:"..second:objectName(), data)
+					if(slash == nil) then break end
+					slash = room:askForCard(first, "slash", "@luawushuang-slash-2:"..second:objectName(), data)
+					if(slash == nil) then break end
+				else
+					local slash = room:askForCard(first, "slash", "duel-slash:"..second:objectName(), data)
+					if(slash == nil) then break end
+				end
+				first, second = second, first
+			end
+			local damage = sgs.DamageStruct() 
+			damage.card = effect.card
+			damage.from = second
+			damage.to = first
+			room:damage(damage)
+			return true	
 		end
-		local jink = nil
-		if(first_jink and second_jink) then
-			jink = sgs.Sanguosha:cloneCard("jink", sgs.Card_NoSuit, 0)
-			jink:addSubcard(first_jink)
-			jink:addSubcard(second_jink)
-		end
-		
-		room:slashResult(effect, jink)
-		return true
-	end
+	end,
 }
 
 --0403 貂蝉
@@ -1482,4 +1511,6 @@ sgs.LoadTranslationTable
 	["#lualubu"] = "0402", 
 	["#luahuatuo"] = "0401", 
 	["#luadiaochan"] = "0403",
+	
+	
 }

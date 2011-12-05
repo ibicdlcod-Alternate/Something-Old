@@ -1,8 +1,8 @@
 --SANGUOSHA Standard Version Generals--
 --Design: YOKA (2011)
 --Code: hypercross ibicdlcod roxiel 【群】皇叔 William915
---Version：14.01 (After Chibi 14)
---Last Update：Dec 3 2011 20:00 UTC+8
+--Version：14.10 (After Chibi 14)
+--Last Update：Dec 5 2011 20:00 UTC+8
 
 module("extensions.YKStdGeneral", package.seeall)
 
@@ -11,7 +11,7 @@ extension = sgs.Package("YKStdGeneral")
 --0101 刘备
 luarende_card = sgs.CreateSkillCard
 {--仁德技能卡 by roxiel, ibicdlcod修复各种BUG
-	name = "luarendecard",
+	name = "luarende",
 	target_fixed = true,	--其实这里可以不用FIX掉，不过这样也简单 先选牌再选人
 	will_throw = false,		--不扔
 	once = false,
@@ -456,7 +456,7 @@ luaganglie = sgs.CreateTriggerSkill
 --0204 张辽
 luatuxi_card = sgs.CreateSkillCard
 {--突袭技能卡 by ibicdlcod
-	name = "luatuxi_card",	
+	name = "luatuxi",	
 	target_fixed = false,	
 	will_throw = false,
 	
@@ -747,7 +747,7 @@ luazhenji:addSkill(lualuoshen)
 --0301 孙权
 luazhiheng_card = sgs.CreateSkillCard
 {--制衡技能卡 by hypercross, ibicdlcod修复getsubcards BUG
-	name = "luazhiheng_card",
+	name = "luazhiheng",
 	target_fixed = true,
 	will_throw = true,
 	
@@ -904,7 +904,7 @@ luakurou = sgs.CreateViewAsSkill
 
 luakurou_card = sgs.CreateSkillCard
 {--苦肉技能卡 by ibicdlcod
-	name = "luakurou_card",
+	name = "luakurou",
 	target_fixed = true,
 	will_throw = false,
 	
@@ -960,7 +960,7 @@ luafanjian = sgs.CreateViewAsSkill
 
 luafanjian_card = sgs.CreateSkillCard
 {--反间技能卡 by ibicdlcod BUG同制衡
-	name = "luafanjian_card",
+	name = "luafanjian",
 	target_fixed = false,
 	will_throw = false,
 	once = true,
@@ -1149,7 +1149,7 @@ lualianying = sgs.CreateTriggerSkill
 --0308 孙尚香（暂时不允许SP变身）
 luajieyin_card = sgs.CreateSkillCard
 {--结姻技能卡 by ibicdlcod 和制衡同样BUG
-	name = "luajieyin_card",
+	name = "luajieyin",
 	target_fixed = false,
 	will_throw = true,
 	once = true,
@@ -1305,7 +1305,7 @@ luaqingnang = sgs.CreateViewAsSkill
 
 luaqingnang_card = sgs.CreateSkillCard
 {--青囊技能卡 by ibicdlcod
-	name = "luaqingnang_card",
+	name = "luaqingnang",
 	target_fixed = false,
 	will_throw = true,
 	
@@ -1425,17 +1425,17 @@ lualijian = sgs.CreateViewAsSkill
 	end,
 	
 	view_as = function(self, cards)
-		--if(#cards ~= 1) then return nil end
-		--local lcard = lualijian_card:clone()
-		--lcard:addSubcard(cards[1])
-		--lcard:setSkillName(self:objectName())
-		return nil--lcard
+		if(#cards ~= 1) then return nil end
+		local lcard = lualijian_card:clone()
+		lcard:addSubcard(cards[1])
+		lcard:setSkillName(self:objectName())
+		return lcard
 	end
 }
 
 lualijian_card = sgs.CreateSkillCard
 {--离间技能卡 by hypercross and ibicdlcod
-	name = "lualijian-card",
+	name = "lualijian",
 	once = true,
 	target_fixed = false,
 	will_throw = true,
@@ -1446,25 +1446,22 @@ lualijian_card = sgs.CreateSkillCard
 		return true
 	end,
 	
-	feasible = function(self, targets)
-		return #targets == 2
-	end,
-	
 	on_use = function(self, room, source, targets)
-		room:askForSkillInvoke(source, "lualijian")
+		if(#targets ~= 2) then return end
 		room:throwCard(self)
 		local to = targets[1]
-		local from = target[2]
-		
+		local from = targets[2]
 		local duel = sgs.Sanguosha:cloneCard("duel", sgs.Card_NoSuit, 0)
 		duel:setSkillName("lualijian")
-		duel:setCancelable(false)
-		
+		--duel:setCancelable(false)
+		if(duel:isNDTrick()) then
+			source:drawCards(1)
+		end
 		local use = sgs.CardUseStruct()
 		use.from = from
 		use.to:append(to)
 		use.card = duel
-		room:usecard(use)
+		room:useCard(use)
 		room:setPlayerFlag(source, "lualijian-used")
 	end
 }
@@ -1511,6 +1508,4 @@ sgs.LoadTranslationTable
 	["#lualubu"] = "0402", 
 	["#luahuatuo"] = "0401", 
 	["#luadiaochan"] = "0403",
-	
-	
 }

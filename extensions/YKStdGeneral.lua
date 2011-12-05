@@ -1,8 +1,8 @@
 --SANGUOSHA Standard Version Generals--
 --Design: YOKA (2011)
---Code: hypercross ibicdlcod roxiel 【群】皇叔 William915
+--Code: hypercross ibicdlcod roxiel 【群】皇叔 William915 coldera
 --Version：14.10 (After Chibi 14)
---Last Update：Dec 5 2011 20:00 UTC+8
+--Last Update：Dec 5 2011 20:33 UTC+8
 
 module("extensions.YKStdGeneral", package.seeall)
 
@@ -10,7 +10,7 @@ extension = sgs.Package("YKStdGeneral")
 
 --0101 刘备
 luarende_card = sgs.CreateSkillCard
-{--仁德技能卡 by roxiel, ibicdlcod修复各种BUG
+{--仁德技能卡 by roxiel, ibicdlcod修复各种BUG（几乎所有技能皆有参考原CPP代码，不再赘述）
 	name = "luarende",
 	target_fixed = true,	--其实这里可以不用FIX掉，不过这样也简单 先选牌再选人
 	will_throw = false,		--不扔
@@ -746,7 +746,7 @@ luazhenji:addSkill(lualuoshen)
 
 --0301 孙权
 luazhiheng_card = sgs.CreateSkillCard
-{--制衡技能卡 by hypercross, ibicdlcod修复getsubcards BUG
+{--制衡技能卡 by hypercross, ibicdlcod修复getsubcards BUG, coldera修复技能卡objectName失效的BUG
 	name = "luazhiheng",
 	target_fixed = true,
 	will_throw = true,
@@ -1346,7 +1346,7 @@ luawushuang = sgs.CreateTriggerSkill
 	on_trigger = function(self, event, player, data)
 		local room = player:getRoom()
 		if(event == sgs.SlashProceed) then
-			local effect = data:toSlashEffect()		
+			local effect = data:toSlashEffect()
 			if not effect.from:hasSkill(self:objectName()) then return false end 
 			room:playSkillEffect("luawushuang")
 			local firstjink, secondjink = nil, nil
@@ -1361,11 +1361,11 @@ luawushuang = sgs.CreateTriggerSkill
 				jink:addSubcard(firstjink)
 				jink:addSubcard(secondjink)
 				room:slashResult(effect, jink)
-			return true
-		end	
+				return true
+			end--[[以下决斗部分有BUG, 决斗部分需要通过未来的LUA【决斗】卡牌实现
 		elseif(event == sgs.CardEffected) then
 			local effect = data:toCardEffect()
-			if not effect.card:inherits("Duel") then return end	
+			if not effect.card:inherits("Duel") then return end
 			local first,second = effect.to, effect.from
 			room:setEmotion(first, "duel-a")
 			room:setEmotion(second, "duel-b")
@@ -1382,12 +1382,12 @@ luawushuang = sgs.CreateTriggerSkill
 				end
 				first, second = second, first
 			end
-			local damage = sgs.DamageStruct() 
+			local damage = sgs.DamageStruct()
 			damage.card = effect.card
 			damage.from = second
 			damage.to = first
 			room:damage(damage)
-			return true	
+			return true]]
 		end
 	end,
 }
@@ -1453,15 +1453,13 @@ lualijian_card = sgs.CreateSkillCard
 		local from = targets[2]
 		local duel = sgs.Sanguosha:cloneCard("duel", sgs.Card_NoSuit, 0)
 		duel:setSkillName("lualijian")
-		--duel:setCancelable(false)
-		if(duel:isNDTrick()) then
-			source:drawCards(1)
-		end
+		room:cardEffect(duel, from, to)--[[
+		duel:setCancelable(false)因为此句失效，上一句为权宜之计，有更好的方法请提出
 		local use = sgs.CardUseStruct()
 		use.from = from
 		use.to:append(to)
 		use.card = duel
-		room:useCard(use)
+		room:useCard(use)]]
 		room:setPlayerFlag(source, "lualijian-used")
 	end
 }
@@ -1483,6 +1481,7 @@ luadiaochan:addSkill(lualijian)
 --Load translations
 sgs.LoadTranslationTable
 {
+	--武将编号(为尚未完成的Ω版平台而做, 对神杀赤壁版或任何其他MOD无效)
 	["#luacaocao"] = "0201", 
 	["#luazhangliao"] = "0204", 
 	["#luaguojia"] = "0206", 
@@ -1508,4 +1507,6 @@ sgs.LoadTranslationTable
 	["#lualubu"] = "0402", 
 	["#luahuatuo"] = "0401", 
 	["#luadiaochan"] = "0403",
+	
+	--待补的翻译
 }

@@ -761,7 +761,7 @@ luazhiheng_card = sgs.CreateSkillCard
 }
 
 luazhiheng = sgs.CreateViewAsSkill
-{--制衡 by ibicdlcod **已知严重BUG：发动技能不显示技能名**
+{--制衡 by ibicdlcod
 	name = "luazhiheng",
 	n = 998,--传说中的“不设上限请设为998，对，只要998”（hypercross语）
 		
@@ -891,7 +891,7 @@ luakeji = sgs.CreateTriggerSkill
 
 --0304 黄盖
 luakurou = sgs.CreateViewAsSkill
-{--苦肉 by ibicdlcod 已知bug:同孙权
+{--苦肉 by ibicdlcod
 	name = "luakurou",
 	n = 0,
 	
@@ -959,7 +959,7 @@ luafanjian = sgs.CreateViewAsSkill
 }
 
 luafanjian_card = sgs.CreateSkillCard
-{--反间技能卡 by ibicdlcod BUG同制衡
+{--反间技能卡 by ibicdlcod
 	name = "luafanjian",
 	target_fixed = false,
 	will_throw = false,
@@ -1148,7 +1148,7 @@ lualianying = sgs.CreateTriggerSkill
 
 --0308 孙尚香（暂时不允许SP变身）
 luajieyin_card = sgs.CreateSkillCard
-{--结姻技能卡 by ibicdlcod 和制衡同样BUG
+{--结姻技能卡 by ibicdlcod
 	name = "luajieyin",
 	target_fixed = false,
 	will_throw = true,
@@ -1282,7 +1282,7 @@ luajijiu = sgs.CreateViewAsSkill
 }
 
 luaqingnang = sgs.CreateViewAsSkill
-{--青囊 by ibicdlcod 和制衡同样BUG
+{--青囊 by ibicdlcod
 	name = "luaqingnang",
 	n = 1,
 	

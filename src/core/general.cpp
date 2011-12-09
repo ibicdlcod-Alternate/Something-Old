@@ -65,7 +65,7 @@ QString General::getPixmapPath(const QString &category) const{
     if(category == "card")
         suffix = "jpg";
     QString pack = this->getPackage();
-#ifdef OSCSS /*Not Active yet*/
+#ifdef OSCSEX /*Not Active yet*/
     return QString("extensions/%1/images/%2/%3.%4").arg(pack).arg(category).arg(objectName()).arg(suffix);
 #else
     return QString("image/generals/%1/%2.%3").arg(category).arg(objectName()).arg(suffix);

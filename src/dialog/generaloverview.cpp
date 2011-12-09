@@ -4,7 +4,7 @@
 #include "oscs.h"
 #include <QFile>
 
-#ifdef OSCS
+#ifdef OSCS_GENOV
 #include "ui_generaloverviewoe.h"
 #else
 #include "ui_generaloverview.h"
@@ -42,7 +42,7 @@ void GeneralOverview::fillGenerals(const QList<const General *> &generals){
         const General *general = generals[i];
 
         QString name, kingdom, gender, max_hp, package;
-#ifdef OSCS
+#ifdef OSCS_GENOV
         QString number = Sanguosha->translate("#" + general->objectName());
 #endif
 
@@ -53,7 +53,7 @@ void GeneralOverview::fillGenerals(const QList<const General *> &generals){
         max_hp = QString::number(general->getMaxHp());
         package = Sanguosha->translate(general->getPackage());
 
-#ifdef OSCS
+#ifdef OSCS_GENOV
         QTableWidgetItem *number_item = new QTableWidgetItem(number);
         number_item->setTextAlignment(Qt::AlignCenter);
 #endif
@@ -62,7 +62,7 @@ void GeneralOverview::fillGenerals(const QList<const General *> &generals){
         name_item->setTextAlignment(Qt::AlignCenter);
         name_item->setData(Qt::UserRole, general->objectName());
 
-#ifndef OSCS
+#ifndef OSCS_GENOV
         if(general->isLord()){
             name_item->setIcon(lord_icon);
             name_item->setTextAlignment(Qt::AlignCenter);
@@ -84,7 +84,7 @@ void GeneralOverview::fillGenerals(const QList<const General *> &generals){
         QTableWidgetItem *package_item = new QTableWidgetItem(package);
         package_item->setTextAlignment(Qt::AlignCenter);
 
-#ifdef OSCS
+#ifdef OSCS_GENOV
         QColor qkColor;
         if(general->getKingdom() == "wei"){
             qkColor = Qt::darkBlue;
@@ -145,12 +145,12 @@ void GeneralOverview::fillGenerals(const QList<const General *> &generals){
         ui->tableWidget->setItem(i, 2, gender_item);
         ui->tableWidget->setItem(i, 3, max_hp_item);
         ui->tableWidget->setItem(i, 4, package_item);
-#ifdef OSCS
+#ifdef OSCS_GENOV
         ui->tableWidget->setItem(i, 5, number_item);
 #endif
     }
 
-#ifdef OSCS
+#ifdef OSCS_GENOV
     ui->tableWidget->setColumnWidth(0, 110);
 #else
     ui->tableWidget->setColumnWidth(0, 80);
@@ -158,7 +158,7 @@ void GeneralOverview::fillGenerals(const QList<const General *> &generals){
     ui->tableWidget->setColumnWidth(1, 50);
     ui->tableWidget->setColumnWidth(2, 50);
     ui->tableWidget->setColumnWidth(3, 60);
-#ifdef OSCS
+#ifdef OSCS_GENOV
     ui->tableWidget->setColumnWidth(4, 70);
     ui->tableWidget->setColumnWidth(5, 50);
 #endif

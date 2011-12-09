@@ -131,7 +131,7 @@ void FanjianCard::onEffect(const CardEffectStruct &effect) const{
     room->sendLog(log);
 
     room->getThread()->delay();
-#ifdef OSCS
+#ifdef OSCS_ZHOUYU
     room->showCard(zhouyu, card_id);
 #else
     target->obtainCard(card);
@@ -145,7 +145,7 @@ void FanjianCard::onEffect(const CardEffectStruct &effect) const{
 
         room->damage(damage);
     }
-#ifdef OSCS
+#ifdef OSCS_ZHOUYU
     if(target->isAlive()){
         target->obtainCard(card);
     }

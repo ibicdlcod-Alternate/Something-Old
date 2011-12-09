@@ -409,7 +409,7 @@ bool ServerPlayer::hasNullification() const{
 
         return count >= n;
     }
-#ifdef OSCS
+#ifdef OSCS_LIUYUE
     else if(hasSkill("shuihun")){
         int n = qMax(1, getHp());
         int count = 0;

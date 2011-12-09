@@ -31,7 +31,7 @@
 Engine *Sanguosha = NULL;
 
 extern "C" {
-#ifdef OSCS
+#ifdef OSCS_TAN
     Package *NewOETanA();
     Package *NewOETanB();
 #endif
@@ -73,7 +73,7 @@ extern "C" {
 Engine::Engine()
 {
     Sanguosha = this;
-#ifdef OSCS
+#ifdef OSCS_TAN
     addPackage(NewOETanA());
     addPackage(NewOETanB());
 #endif
@@ -364,7 +364,7 @@ SkillCard *Engine::cloneSkillCard(const QString &name) const{
 
 QString Engine::getVersion() const{
 #ifdef OSCS
-    return "20111225";
+    return OSCS_VERSION;
 #else
     return "20111113";
 #endif
@@ -372,7 +372,7 @@ QString Engine::getVersion() const{
 
 QString Engine::getVersionName() const{
 #ifdef OSCS
-    return tr("OSCS XV Beta");
+    return tr(OSCS_VERSIONNAME);
 #else
     return tr("Chibi");
 #endif
@@ -396,7 +396,7 @@ QStringList Engine::getExtensions() const{
 QStringList Engine::getKingdoms() const{
     static QStringList kingdoms;
     if(kingdoms.isEmpty())
-#ifdef OSCS
+#ifdef OSCS_TAN
         kingdoms << "wei" << "shu" << "wu" << "qun" << "god" << "tan";
 #else
         kingdoms << "wei" << "shu" << "wu" << "qun" << "god";

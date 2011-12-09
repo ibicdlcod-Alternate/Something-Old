@@ -10,9 +10,6 @@ class Player;
 #include <QStringList>
 #include <QMap>
 
-#include <QFile>
-#include "oscs.h"
-
 class CardPattern{
 public:
     virtual bool match(const Player *player, const Card *card) const = 0;

@@ -89,6 +89,14 @@ return{
 
 ["OETanA"] = "欧米茄坛包A",
 ["OETanB"] = "欧米茄坛包B",
+["OETanC"] = "欧米茄坛包C",
+["OETanD"] = "欧米茄坛包D",
+["OETanE"] = "欧米茄坛包E",
+["OETanF"] = "欧米茄坛包F",
+["OETanG"] = "欧米茄坛包G",
+["OETanH"] = "欧米茄坛包H",
+["OETanI"] = "欧米茄坛包I",
+["OETanS"] = "欧米茄坛包SP",
 --截至62月6日11将,但计划全武将远多于此,占用31,32号段
 
 ["ABHuanjin"] = "Alcatraz黄巾之乱",

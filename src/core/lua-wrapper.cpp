@@ -110,3 +110,21 @@ QString LuaSkillCard::toString() const{
             .arg(subcardString()).arg(user_string);
 }
 
+#ifdef OSCSSC /*not active yet*/
+LuaScenarioRule::LuaScenarioRule(Scenario *scenario)
+    :ScenarioRule(scenario), priority(1), on_trigger(0)
+{
+
+}
+
+int LuaScenarioRule::getPriority() const{
+    return priority;
+}
+
+LuaScenario::LuaScenario(const QString &name)
+    :Scenario(name)
+{
+
+}
+
+#endif

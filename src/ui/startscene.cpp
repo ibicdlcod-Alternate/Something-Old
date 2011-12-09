@@ -12,7 +12,7 @@
 StartScene::StartScene()
 {
     // game logo
-#ifdef OSCS
+#ifdef OSCS_LOGO
     logo = new Pixmap("image/system/logoCS.png");
 #else
     logo = new Pixmap("image/system/logo.png");

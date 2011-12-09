@@ -6,7 +6,7 @@
 #include "oscs.h"
 #include <QFile>
 
-#ifdef OSCS
+#ifdef OSCSSC
 #include "scenario.h"
 #endif
 
@@ -113,13 +113,27 @@ public:
     LuaFunction on_effect;
 };
 
-#ifdef OSCS
+#ifdef OSCSSC
+class LuaScenarioRule: public ScenarioRule{
+    Q_OBJECT
+
+public:
+    LuaScenarioRule(Scenario *scenario);
+
+    virtual int getPriority() const;
+    LuaFunction priority;
+    virtual bool triggerable(const ServerPlayer *target) const;
+    LuaFunction on_trigger;
+};
+
 class LuaScenario : public Scenario{
     Q_OBJECT
-/*
+
 public:
     LuaScenario(const QString &name);
+
     const ScenarioRule *getRule() const;
+    LuaFunction rule_get;
     virtual bool exposeRoles() const;
     LuaFunction roles_exposed;
     virtual int getPlayerCount() const;
@@ -127,7 +141,7 @@ public:
     virtual void getRoles(char *roles) const;
     LuaFunction roles_get;
     virtual void assign(QStringList &generals, QStringList &roles) const;
-    LuaFunction assign;
+    LuaFunction roles_assign;
     virtual AI::Relation relationTo(const ServerPlayer *a, const ServerPlayer *b) const;
     LuaFunction relation_to;
     virtual void onTagSet(Room *room, const QString &key) const = 0;
@@ -138,22 +152,9 @@ public:
 protected:
     QString lord;
     QStringList loyalists, rebels, renegades;
-    const LuaScenarioRule *rule;
-*/
+    LuaScenarioRule *rule;
 };
 
-class LuaScenarioRule: public ScenarioRule{
-    Q_OBJECT
-/*
-public:
-    LuaScenarioRule(Scenario *scenario);
-
-    virtual int getPriority() const;
-    LuaFunction priority;
-    virtual bool triggerable(const ServerPlayer *target) const;
-    LuaFunction on_trigger;
-*/
-};
 #endif
 
 #endif // LUAWRAPPER_H

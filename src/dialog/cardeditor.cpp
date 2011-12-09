@@ -546,7 +546,7 @@ void CardScene::setFrame(const QString &kingdom, bool is_lord){
             color_map["wu"] = QColor(167, 221, 102);
             color_map["qun"] = QColor(146, 146, 146);
             color_map["god"] = QColor(252, 219, 85);
-#ifdef OSCS
+#ifdef OSCS_TAN
             color_map["tan"] = QColor(22, 219, 224);
 #endif
         }

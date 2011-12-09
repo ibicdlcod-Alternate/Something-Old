@@ -91,8 +91,7 @@ SOURCES += src/main.cpp \
         src/package/OETanB.cpp \
         swig/sanguosha_wrap.cxx
 
-HEADERS += \
-        src/client/aux-skills.h \
+HEADERS += src/client/aux-skills.h \
 	src/client/client.h \
 	src/client/clientplayer.h \
 	src/client/clientstruct.h \

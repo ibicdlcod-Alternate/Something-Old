@@ -587,7 +587,7 @@ void GameRule::rewardAndPunish(ServerPlayer *killer, ServerPlayer *victim) const
         return;
 
     if(killer->getRoom()->getMode() == "06_3v3"){
-#ifdef OSCS
+#ifdef OSCS_YT000
         if(killer->hasSkill("guixin_33")){
             if(killer->askForSkillInvoke("guixin_33")){
                 Room *room = killer->getRoom();

@@ -306,7 +306,7 @@ void MainWindow::on_actionEnable_Hotkey_toggled(bool checked)
         Config.setValue("EnableHotKey", checked);
     }
 }
-#ifdef OSCS
+#ifdef OSCS_ABOUTS
 void MainWindow::on_actionAbout_triggered()
 {
     // Yuriko's pixmap
@@ -595,7 +595,7 @@ void MainWindow::on_actionBroadcast_triggered()
     BroadcastBox *dialog = new BroadcastBox(server, this);
     dialog->exec();
 }
-#ifdef OSCS
+#ifdef OSCS_ABOUTS
 void MainWindow::on_actionAcknowledgement_triggered()
 {
 

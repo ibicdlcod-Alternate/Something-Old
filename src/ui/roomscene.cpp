@@ -35,6 +35,9 @@
 #include <QCommandLinkButton>
 #include <QFormLayout>
 #include <QStatusBar>
+#include <QMovie>
+
+
 
 #ifdef Q_OS_WIN32
 #include <QAxObject>
@@ -66,7 +69,7 @@ RoomScene *RoomSceneInstance;
 
 RoomScene::RoomScene(QMainWindow *main_window)
     :focused(NULL), special_card(NULL), viewing_discards(false),
-    main_window(main_window)
+      main_window(main_window),game_started(false)
 {
     RoomSceneInstance = this;
 
@@ -249,10 +252,12 @@ RoomScene::RoomScene(QMainWindow *main_window)
         // chat box
         chat_box = new QTextEdit;
         chat_box->resize(230 + widen_width, 175);
+        chat_box->setObjectName("chat_box");
 
-        QGraphicsProxyWidget *chat_box_widget = addWidget(chat_box);
+        chat_box_widget = addWidget(chat_box);
         chat_box_widget->setPos(-343 - widen_width, -83);
         chat_box_widget->setZValue(-2.0);
+        chat_box_widget->setObjectName("chat_box_widget");
 
         chat_box->setReadOnly(true);
         chat_box->setTextColor(Config.TextEditColor);
@@ -261,6 +266,7 @@ RoomScene::RoomScene(QMainWindow *main_window)
         // chat edit
         chat_edit = new QLineEdit;
         chat_edit->setFixedWidth(chat_box->width());
+        chat_edit->setObjectName("chat_edit");
 
 #if QT_VERSION >= 0x040700
         chat_edit->setPlaceholderText(tr("Please enter text to chat ... "));
@@ -270,6 +276,7 @@ RoomScene::RoomScene(QMainWindow *main_window)
         chat_edit_widget->setWidget(chat_edit);
         chat_edit_widget->setX(0);
         chat_edit_widget->setY(chat_box->height());
+        chat_edit_widget->setObjectName("chat_edit_widget");
         connect(chat_edit, SIGNAL(returnPressed()), this, SLOT(speak()));
 
         if(circular){
@@ -277,7 +284,7 @@ RoomScene::RoomScene(QMainWindow *main_window)
             chat_box_widget->setPos(367 , -38);
 
             chat_edit->setFixedWidth(chat_box->width());
-            chat_edit->setFixedHeight(24);
+            //chat_edit->(24);
             chat_edit_widget->setX(0);
             chat_edit_widget->setY(chat_box->height()+1);
         }
@@ -291,10 +298,12 @@ RoomScene::RoomScene(QMainWindow *main_window)
         log_box = new ClientLogBox;
         log_box->resize(chat_box->width(), 205);
         log_box->setTextColor(Config.TextEditColor);
+        log_box->setObjectName("log_box");
 
         QGraphicsProxyWidget *log_box_widget = addWidget(log_box);
         log_box_widget->setPos(114, -83);
         log_box_widget->setZValue(-2.0);
+        log_box_widget->setObjectName("log_box_widget");
         connect(ClientInstance, SIGNAL(log_received(QString)), log_box, SLOT(appendLog(QString)));
 
         if(circular){
@@ -355,6 +364,8 @@ RoomScene::RoomScene(QMainWindow *main_window)
     addWidgetToSkillDock(sort_combobox, true);
 
     createStateItem();
+
+
 }
 
 void RoomScene::createButtons(){
@@ -492,6 +503,8 @@ void RoomScene::adjustItems(){
     int i;
     for(i=0; i<positions.length(); i++)
         photos.at(i)->setPos(positions.at(i));
+
+    reLayout();
 }
 
 QList<QPointF> RoomScene::getPhotoPositions() const{
@@ -559,11 +572,37 @@ QList<QPointF> RoomScene::getPhotoPositions() const{
     else
         indices = indices_table[photos.length() - 1];
 
+    qreal stretch_x = main_window->width()  - chat_box->width();
+    stretch_x/=1075;
+    qreal stretch_y = (main_window->height() - dashboard->boundingRect().height())/575;
+
+    QPointF offset = QPoint( - chat_box->width()*(1-stretch_x)/2,
+                             - dashboard->boundingRect().height()*(1-stretch_y)/2);
+
+
+    if(!Config.value("CircularView",false).toBool())
+    {
+        stretch_x = 1;
+        stretch_y = 1;
+        offset=QPoint(0,0);
+    }
+
     int i;
     for(i=0; i<photos.length(); i++){
         int index = indices[i];
-        positions << pos[index];
+        QPointF aposition = pos[index];
+
+        aposition.rx()*=stretch_x;
+        aposition.ry()*=stretch_y;
+
+        aposition.rx()+=offset.x();
+        aposition.ry()+=offset.y();
+
+        positions << aposition;
     }
+
+
+
 
     return positions;
 }
@@ -667,17 +706,18 @@ void RoomScene::drawNCards(ClientPlayer *player, int n){
 
         QPropertyAnimation *ugoku = new QPropertyAnimation(pixmap, "pos");
         ugoku->setStartValue(DrawPilePos);
-        ugoku->setDuration(1000);
-        ugoku->setEasingCurve(QEasingCurve::OutQuart);
+        ugoku->setDuration(800);
+        ugoku->setEasingCurve(QEasingCurve::OutQuad);
         ugoku->setEndValue(photo->pos() + QPointF(20 *i, 0));
 
         QPropertyAnimation *kieru = new QPropertyAnimation(pixmap, "opacity");
-        kieru->setKeyValueAt(0.4, 1.0);
+        kieru->setKeyValueAt(0, 1.0);
+        kieru->setKeyValueAt(0.8, 1.0);
         kieru->setEndValue(0.0);
-        kieru->setDuration(500);
+        kieru->setDuration(800);
 
         moving->addAnimation(ugoku);
-        disappering->addAnimation(kieru);
+        moving->addAnimation(kieru);
 
         connect(kieru, SIGNAL(finished()), pixmap, SLOT(deleteLater()));
     }
@@ -1129,7 +1169,7 @@ void RoomScene::putCardItem(const ClientPlayer *dest, Player::Place dest_place, 
     if(dest == NULL){
         if(dest_place == Player::DiscardedPile){
             card_item->setHomePos(DiscardedPos);
-            card_item->goBack();
+            card_item->goBack(true,false,false);
             card_item->setEnabled(true);
 
             card_item->setFlag(QGraphicsItem::ItemIsFocusable, false);
@@ -2138,6 +2178,9 @@ void RoomScene::changeHp(const QString &who, int delta, DamageStruct::Nature nat
     else
         dashboard->update();
 
+    QStringList list = QString("%1:%2").arg(who).arg(delta).split(":");
+    doAnimation("hpChange",list);
+
     if(delta < 0){
         QString damage_effect;
         switch(delta){
@@ -2166,7 +2209,8 @@ void RoomScene::changeHp(const QString &who, int delta, DamageStruct::Nature nat
         Sanguosha->playAudio(damage_effect);
 
         if(photo){
-            photo->setEmotion("damage");
+            //photo->setEmotion("damage");
+            setEmotion(who,"damage");
             photo->tremble();
         }
 
@@ -2276,8 +2320,7 @@ void RoomScene::onGameOver(){
             loser_list << player;
 
         if(player != Self){
-            Photo *photo = name2photo.value(player->objectName());
-            photo->setEmotion(win ? "good" : "bad", true);
+            setEmotion(player->objectName(),win ? "good" : "bad",true);
         }
     }
 
@@ -2861,7 +2904,7 @@ void RoomScene::onGameStart(){
 
     // add free discard button
     if(ServerInfo.FreeChoose && !ClientInstance->getReplayer()){
-        QPushButton *free_discard = dashboard->addButton("free-discard", 190, true);
+        free_discard = dashboard->addButton("free-discard", 190, true);
         free_discard->setToolTip(tr("Discard cards freely"));
         FreeDiscardSkill *discard_skill = new FreeDiscardSkill(this);
         button2skill.insert(free_discard, discard_skill);
@@ -2935,6 +2978,8 @@ void RoomScene::onGameStart(){
 #endif
 
 #endif
+    game_started = true;
+    reLayout();
 }
 
 #ifdef AUDIO_SUPPORT
@@ -2984,11 +3029,29 @@ void RoomScene::moveFocus(const QString &who){
     }
 }
 
-void RoomScene::setEmotion(const QString &who, const QString &emotion){
+void RoomScene::setEmotion(const QString &who, const QString &emotion ,bool permanent){
     Photo *photo = name2photo[who];
     if(photo){
-        photo->setEmotion(emotion);
+        photo->setEmotion(emotion,permanent);
     }
+
+        QLabel *item = new QLabel(emotion,main_window);
+        QMovie *movie = new QMovie(QString("image/system/animation/%1.gif").arg(emotion));
+
+        item->setMovie(movie);
+        movie->start();
+
+        connect(movie,SIGNAL(finished()),item,SLOT(deleteLater()));
+        QTimer::singleShot(1500, item, SLOT(deleteLater()));
+        movie->setBackgroundColor(QColor(0,0,0,0));
+        item->show();
+
+        int x = photo->scenePos().x() + main_window->width()/2;
+        int y = photo->scenePos().y() + main_window->height()/2;
+        int w = 128;
+        int h = 128;
+
+        item->setGeometry(x,y,w,h);
 }
 
 void RoomScene::showSkillInvocation(const QString &who, const QString &skill_name){
@@ -3047,7 +3110,136 @@ void RoomScene::doMovingAnimation(const QString &name, const QStringList &args){
     connect(group, SIGNAL(finished()), item, SLOT(deleteLater()));
 }
 
+void RoomScene::animateHpChange(const QString &name, const QStringList &args)
+{
+    QString who = args.at(0);
+    if(who == Self->objectName())
+    {
+        int delta = - args.at(1).toInt();
+
+        int hp = Self->getHp() + delta;
+        int max_hp = Self->getMaxHP();
+
+        int index = hp < max_hp ?
+                    qMin(hp,5) : 5;
+
+        QString path = max_hp > 6 ?
+                    QString("image/system/magatamas/small-%1.png").arg(index) :
+                    QString("image/system/magatamas/%1.png").arg(index);
+
+        qreal width = max_hp > 6 ? 14 : 22;
+        qreal total_width = width*max_hp;
+        qreal skip = (121 - total_width)/(max_hp+1);
+        qreal start_x = dashboard->getRightPosition();
+
+        for(int i=0;i<delta;i++)
+        {
+            Pixmap *aniMaga = new Pixmap(path);
+            addItem(aniMaga);
+            aniMaga->show();
+            i+=hp-delta;
+
+            QPoint pos = QPoint(start_x + skip * (i+1) + i * width,5);
+            pos.rx() += dashboard->scenePos().x();
+            pos.ry() += dashboard->scenePos().y();
+            aniMaga->setPos(pos);
+
+            QPropertyAnimation *fade = new QPropertyAnimation(aniMaga,"opacity");
+            fade->setEndValue(0);
+            QPropertyAnimation *grow = new QPropertyAnimation(aniMaga,"scale");
+            grow->setEndValue(4);
+
+            connect(fade,SIGNAL(finished()),aniMaga,SLOT(deleteLater()));
+
+            QParallelAnimationGroup *group = new QParallelAnimationGroup;
+            group->addAnimation(fade);
+            group->addAnimation(grow);
+
+            group->start(QAbstractAnimation::DeleteWhenStopped);
+
+
+
+            i-=hp-delta;
+        }
+
+        return;
+    }
+
+    Photo *photo = name2photo[who];
+    const Player *player = photo->getPlayer();
+    int delta = - args.at(1).toInt();
+
+    int hp = qMax(0, player->getHp() + delta);
+
+    int index = 5;
+    if(player->getHp() + delta < player->getMaxHP())
+        index = qBound(0, hp, 5);
+
+    for(int i=0;i<delta;i++)
+    {
+
+        i+=player->getHp();
+        Pixmap *aniMaga = new Pixmap(QString("image/system/magatamas/small-%1.png").arg(index));
+        addItem(aniMaga);
+
+        QPoint pos = i>=5 ? QPoint(42,69):QPoint(26,86);
+        pos.rx() += (i%5)*16;
+        pos.rx() += photo->scenePos().x();
+        pos.ry() += photo->scenePos().y();
+        aniMaga->setPos(pos);
+
+        QPropertyAnimation *fade = new QPropertyAnimation(aniMaga,"opacity");
+        fade->setEndValue(0);
+        QPropertyAnimation *grow = new QPropertyAnimation(aniMaga,"scale");
+        grow->setEndValue(4);
+
+        connect(fade,SIGNAL(finished()),aniMaga,SLOT(deleteLater()));
+
+        QParallelAnimationGroup *group = new QParallelAnimationGroup;
+        group->addAnimation(fade);
+        group->addAnimation(grow);
+
+        group->start(QAbstractAnimation::DeleteWhenStopped);
+
+        aniMaga->show();
+
+        i-=player->getHp();
+    }
+
+
+}
+
+void RoomScene::animatePopup(const QString &name, const QStringList &args)
+{
+    QPointF pos = getAnimationObject(args.at(0))->scenePos();
+
+    QPixmap *item = new QPixmap(QString("image/system/animation/%1.png").arg(name));
+    pos.rx()+=item->width()/2;
+    pos.ry()+=item->height()/2;
+
+    Sprite *sprite = new Sprite();
+    sprite->setParent(this);
+    sprite->setPixmapAtMid(*item);
+    Sprite *glare = new Sprite();
+    glare->setPixmapAtMid(*item);
+
+    sprite->setResetTime(300);
+    sprite->addKeyFrame(0,"opacity",0);
+    sprite->addKeyFrame(500,"opacity",1);
+    sprite->addKeyFrame(800,"opacity",1);
+    //sprite->addKeyFrame(1000,"opacity",0);
+    sprite->addKeyFrame(0,"scale",0.2,QEasingCurve::OutQuad);
+    sprite->addKeyFrame(300,"scale",1);
+    sprite->addKeyFrame(500,"scale",1.2);
+
+    sprite->start();
+
+    addItem(sprite);
+    sprite->setPos(pos);
+}
+
 void RoomScene::doAppearingAnimation(const QString &name, const QStringList &args){
+
     Pixmap *item = new Pixmap(QString("image/system/animation/%1.png").arg(name));
     addItem(item);
 
@@ -3153,7 +3345,8 @@ void RoomScene::doIndicate(const QString &name, const QStringList &args){
 void RoomScene::doAnimation(const QString &name, const QStringList &args){
     static QMap<QString, AnimationFunc> map;
     if(map.isEmpty()){
-        map["peach"] = &RoomScene::doMovingAnimation;
+        map["peach"] = &RoomScene::animatePopup;
+        map["jink"] = &RoomScene::animatePopup;
         map["nullification"] = &RoomScene::doMovingAnimation;
 
         map["analeptic"] = &RoomScene::doAppearingAnimation;
@@ -3164,6 +3357,8 @@ void RoomScene::doAnimation(const QString &name, const QStringList &args){
         map["lightbox"] = &RoomScene::doLightboxAnimation;
         map["huashen"] = &RoomScene::doHuashen;
         map["indicate"] = &RoomScene::doIndicate;
+
+        map["hpChange"] = &RoomScene::animateHpChange;
     }
 
     AnimationFunc func = map.value(name, NULL);
@@ -3516,6 +3711,16 @@ void RoomScene::finishArrange(){
     ClientInstance->request("arrange " + names.join("+"));
 }
 
+static inline void AddRoleIcon(QMap<QChar, QPixmap> &map, char c, const QString &role){
+    QPixmap pixmap(QString("image/system/roles/small-%1.png").arg(role));
+
+    QChar qc(c);
+    map[qc.toUpper()] = pixmap;
+
+    Pixmap::MakeGray(pixmap);
+    map[qc.toLower()] = pixmap;
+}
+
 void RoomScene::updateStateItem(const QString &roles)
 {
     foreach(QGraphicsItem *item, role_items)
@@ -3524,14 +3729,13 @@ void RoomScene::updateStateItem(const QString &roles)
 
     static QMap<QChar, QPixmap> map;
     if(map.isEmpty()){
-        map[QChar('Z')] = QPixmap("image/system/roles/small-lord.png");
-        map[QChar('C')] = QPixmap("image/system/roles/small-loyalist.png");
-        map[QChar('F')] = QPixmap("image/system/roles/small-rebel.png");
-        map[QChar('N')] = QPixmap("image/system/roles/small-renegade.png");
+        AddRoleIcon(map, 'Z', "lord");
+        AddRoleIcon(map, 'C', "loyalist");
+        AddRoleIcon(map, 'F', "rebel");
+        AddRoleIcon(map, 'N', "renegade");
     }
 
-    for(int i=0; i<roles.length(); i++){
-        QChar c = roles.at(i);
+    foreach(QChar c, roles){
         if(map.contains(c)){
             QGraphicsPixmapItem *item = addPixmap(map.value(c));
             item->setPos(21*role_items.length(), 6);
@@ -3540,4 +3744,141 @@ void RoomScene::updateStateItem(const QString &roles)
             role_items << item;
         }
     }
+}
+
+void RoomScene::reLayout()
+{
+    if(!game_started)return;
+
+    QPoint pos = QPoint(dashboard->getMidPosition(),0);
+
+    int skip = 10;
+    int padding_left = 5;
+    int padding_top = -5;
+
+    pos.rx()+= padding_left;
+    pos.ry()+= padding_top;
+
+    alignTo(trust_button,pos,"xlyb");
+    alignTo(untrust_button,pos,"xlyb");
+    pos.rx()+=trust_button->width();
+    pos.rx()+=skip;
+
+    alignTo(reverse_button,pos,"xlyb");
+    pos.rx()+=reverse_button->width();
+    pos.rx()+=skip*2;
+
+
+    if(ServerInfo.FreeChoose)
+    {
+        alignTo(free_discard,pos,"xlyb");
+        pos.rx()+=free_discard->width();
+        pos.rx()+=skip;
+    }
+
+    pos = QPoint(dashboard->boundingRect().width()-dashboard->getRightPosition(),0);
+
+    pos.rx()-= padding_left;
+    pos.ry()+=padding_top;
+
+    alignTo(discard_button,pos,"xryb");
+    pos.rx()-=discard_button->width();
+    pos.rx()-=skip;
+
+    alignTo(cancel_button,pos,"xryb");
+    pos.rx()-=cancel_button->width();
+    pos.rx()-=skip;
+
+    alignTo(ok_button,pos,"xryb");
+    pos.rx()-=ok_button->width();
+    pos.rx()-=skip;
+    //ok_button->move(-10,-10);
+
+
+    if(!Config.value("circularView",false).toBool())
+    {
+        pos.rx() = dashboard->x() + (dashboard->getMidPosition() + dashboard->getRightPosition())/2;
+
+        alignTo(state_item,pos,"xm");
+
+        pos.ry() = state_item->y();
+        pos.rx() = state_item->x()-padding_left;
+        alignTo(chat_box_widget,pos,"xryt");
+
+        pos.rx() = state_item->x() + state_item->boundingRect().width() + padding_left;
+        alignTo(log_box,pos,"xlyt");
+
+        log_box->setFixedHeight(chat_box->height() + chat_edit->height());
+    }
+    else
+    {
+        pos.ry() = -main_window->height()/2 + 30;
+        pos.ry() -= padding_top*2;
+
+        pos.rx() = main_window->width()/2 - padding_left
+                - chat_box->width()/2;
+                //state_item->x() + state_item->boundingRect().width()/2;
+
+        int height = main_window->height() - dashboard->boundingRect().height();
+        //height    += padding_top;
+        height    -= main_window->statusBar()->height()*2;
+        height    -= chat_edit->height()*2 + state_item->boundingRect().height();
+
+        chat_box->setFixedHeight(height/2);
+        chat_edit->move(0,chat_box->height());
+        log_box->setFixedHeight(height/2);
+
+        alignTo(state_item,pos,"xmyt");
+
+        pos.ry()+=state_item->boundingRect().height();
+        alignTo(log_box,pos,"xmyt");
+
+        pos.ry()+=log_box->height();
+        alignTo(chat_box_widget,pos,"xmyt");
+
+        dashboard->setWidth(main_window->width()-10);
+    }
+
+}
+
+void RoomScene::alignTo(Pixmap *object, QPoint pos, const QString &flags)
+{
+    QPointF to = object->pos();
+    if(flags.contains("xl"))to.rx() = pos.x();
+    else if(flags.contains("xr"))to.rx() = pos.x() - object->boundingRect().width();
+    else if(flags.contains("xm"))to.rx() = pos.x() - object->boundingRect().width()/2;
+
+    if(flags.contains("yt"))to.ry() = pos.y();
+    else if(flags.contains("yb"))to.ry() = pos.y() - object->boundingRect().height();
+    else if(flags.contains("ym"))to.ry() = pos.y() - object->boundingRect().height()/2;
+
+    object->setPos(to);
+}
+
+void RoomScene::alignTo(QWidget *object, QPoint pos, const QString &flags)
+{
+    QPoint to = object->pos();
+    if(flags.contains("xl"))to.rx() = pos.x();
+    else if(flags.contains("xr"))to.rx() = pos.x() - object->width();
+    else if(flags.contains("xm"))to.rx() = pos.x() - object->width()/2;
+
+    if(flags.contains("yt"))to.ry() = pos.y();
+    else if(flags.contains("yb"))to.ry() = pos.y() - object->height();
+    else if(flags.contains("ym"))to.ry() = pos.y() - object->height()/2;
+
+    object->move(to.x(),to.y());
+}
+
+void RoomScene::alignTo(QGraphicsItem* object, QPoint pos, const QString &flags)
+{
+    QPointF to = object->pos();
+    if(flags.contains("xl"))to.rx() = pos.x();
+    else if(flags.contains("xr"))to.rx() = pos.x() - object->boundingRect().width();
+    else if(flags.contains("xm"))to.rx() = pos.x() - object->boundingRect().width()/2;
+
+    if(flags.contains("yt"))to.ry() = pos.y();
+    else if(flags.contains("yb"))to.ry() = pos.y() - object->boundingRect().height();
+    else if(flags.contains("ym"))to.ry() = pos.y() - object->boundingRect().height()/2;
+
+    object->setPos(to);
 }

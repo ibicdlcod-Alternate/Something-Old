@@ -31,6 +31,7 @@ Dashboard::Dashboard()
     setMiddleWidth(middle_width);
 
     sort_type = 0;
+
 }
 
 void Dashboard::createLeft(){
@@ -106,7 +107,10 @@ void Dashboard::createRight(){
     handcard_pixmap->setPos(25, 127);
 
     handcard_num = new QGraphicsSimpleTextItem(handcard_pixmap);
-    handcard_num->setFont(Config.TinyFont);
+    handcard_num->setPos(6,8);
+
+     QFont serifFont("Times", 10, QFont::Bold);
+    handcard_num->setFont(serifFont);
     handcard_num->setBrush(Qt::white);
 
     handcard_pixmap->hide();
@@ -375,10 +379,11 @@ QPushButton *Dashboard::createButton(const QString &name){
     QIcon icon(icon_pixmap);
     icon.addPixmap(icon_pixmap_disabled, QIcon::Disabled);
 
-    button->setIcon(icon);
-    button->setIconSize(icon_pixmap.size());
+    //button->setIcon(icon);
+    //button->setIconSize(icon_pixmap.size());
     button->setFixedSize(icon_pixmap.size());
     button->setObjectName(name);
+    button->setProperty("game_control",true);
 
     button->setAttribute(Qt::WA_TranslucentBackground);
 
@@ -511,21 +516,43 @@ void Dashboard::drawEquip(QPainter *painter, const CardItem *equip, int order){
     if(!equip)
         return;
 
-    static const int width = 117;
+    static const int width = 145;
     static const int height = 25;
     static const int start_x = 8;
     static const int start_y = 40;
 
     int y = start_y + order * 32;
 
+    const EquipCard *card = qobject_cast<const EquipCard *>(equip->getCard());
+    QFont font("Algerian",12);
+    font.setBold(true);
+    painter->setFont(font);
+    painter->setPen(Qt::black);
+
+    // draw image or name
+    // FIXME : should load the image only once instead of every time update is called
+    QString path = QString("image/equips/%1.png").arg(card->objectName());
+    QPixmap *label = new QPixmap(path);
+
+    if(label->isNull())
+    {
+        QString text = QString("%1").arg(card->label());
+        painter->drawText(10, y + 20, text);
+    }else
+    {
+        painter->drawPixmap(10,y + 2,label->width(),label->height(),*label);
+    }
+
     // draw the suit of equip
-    QRect suit_rect(10, y + 3, 15, 15);
+    QRect suit_rect(width - 18, y + 10, 13, 13);
     painter->drawPixmap(suit_rect, equip->getSuitPixmap());
 
-    // draw the name of equip
-    const EquipCard *card = qobject_cast<const EquipCard *>(equip->getCard());
-    QString text = QString("%1 %2").arg(card->getNumberString()).arg(card->label());
-    painter->drawText(28, y + 20, text);
+
+    // draw the number of equip
+
+    painter->drawText(width - 5,y + 24,QString("%1").arg(card->getNumberString()));
+
+
 
     painter->setPen(Qt::white);
     if(equip->isMarked()){
@@ -878,4 +905,14 @@ const ViewAsSkill *Dashboard::currentSkill() const{
 
 const Card *Dashboard::pendingCard() const{
     return pending_card;
+}
+
+int Dashboard::getRightPosition()
+{
+    return left_pixmap.width() + middle->rect().width();
+}
+
+int Dashboard::getMidPosition()
+{
+    return left_pixmap.width();
 }

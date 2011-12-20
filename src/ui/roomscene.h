@@ -7,6 +7,7 @@
 #include "client.h"
 #include "aux-skills.h"
 #include "clientlogbox.h"
+#include "sprite.h"
 
 class Window;
 class Button;
@@ -170,7 +171,7 @@ private:
     QComboBox *role_combobox;
     QPushButton *trust_button, *untrust_button;
     QPushButton *ok_button, *cancel_button, *discard_button;
-    QPushButton *reverse_button;
+    QPushButton *reverse_button, *free_discard;
     QMenu *known_cards_menu, *change_general_menu;
     Window *prompt_box;
     QGraphicsItem *control_panel;
@@ -204,6 +205,7 @@ private:
     ClientLogBox *log_box;
     QTextEdit *chat_box;
     QLineEdit *chat_edit;
+    QGraphicsProxyWidget *chat_box_widget;
 
 #ifdef AUDIO_SUPPORT
     QSharedMemory *memory;
@@ -258,6 +260,16 @@ private:
     void doHuashen(const QString &name, const QStringList &args);
     void doIndicate(const QString &name, const QStringList &args);
 
+    void animateHpChange(const QString &name, const QStringList &args);
+    void animatePopup(const QString &name, const QStringList &args);
+
+    //re-layout attempts
+    bool game_started;
+    void reLayout();
+    void alignTo(Pixmap *object, QPoint pos, const QString &flags);
+    void alignTo(QWidget *object, QPoint pos, const QString &flags);
+    void alignTo(QGraphicsItem *object, QPoint pos, const QString &flags);
+
 private slots:
     void updateSkillButtons();
     void acquireSkill(const ClientPlayer *player, const QString &skill_name);
@@ -273,7 +285,7 @@ private slots:
     void hideAvatars();
     void changeHp(const QString &who, int delta, DamageStruct::Nature nature);
     void moveFocus(const QString &who);
-    void setEmotion(const QString &who, const QString &emotion);
+    void setEmotion(const QString &who, const QString &emotion,bool permanent = false);
     void showSkillInvocation(const QString &who, const QString &skill_name);
     void doAnimation(const QString &name, const QStringList &args);
     void adjustDashboard();

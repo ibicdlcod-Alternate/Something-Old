@@ -19,6 +19,8 @@
 #include <QPushButton>
 #include <QMenu>
 
+#include "pixmapanimation.h"
+
 Photo::Photo()
     :Pixmap("image/system/photo-back.png"),
     player(NULL),
@@ -162,6 +164,16 @@ void Photo::setEmotion(const QString &emotion, bool permanent){
 
     if(!permanent)
         QTimer::singleShot(2000, this, SLOT(hideEmotion()));
+
+    PixmapAnimation *pma = new PixmapAnimation();
+    pma->setPath(QString("image/system/emotion/%1/").arg(emotion));
+    if(pma->valid())
+    {
+        pma->setParentItem(this);
+        pma->startTimer(50);
+        connect(pma,SIGNAL(finished()),pma,SLOT(deleteLater()));
+    }
+    else delete pma;
 }
 
 void Photo::tremble(){
@@ -236,7 +248,6 @@ void Photo::setPlayer(const ClientPlayer *player)
         connect(player, SIGNAL(action_taken()), this, SLOT(setActionState()));
         connect(player, SIGNAL(pile_changed(QString)), this, SLOT(updatePile(QString)));
 
-
         mark_item->setDocument(player->getMarkDoc());
     }
 
@@ -293,6 +304,8 @@ void Photo::updateAvatar(){
 
         avatar_area->setToolTip(QString());
         small_avatar_area->setToolTip(QString());
+
+        ready_item->hide();
     }
 
     hide_avatar = false;

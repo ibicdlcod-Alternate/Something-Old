@@ -145,6 +145,16 @@ void Room::output(const QString &message){
     emit room_message(message);
 }
 
+void Room::outputEventStack(){
+    QString msg;
+
+    foreach(EventTriplet triplet, *thread->getEventStack()){
+        msg.prepend(triplet.toString());
+    }
+
+    output(msg);
+}
+
 void Room::enterDying(ServerPlayer *player, DamageStruct *reason){
     DyingStruct dying;
     dying.who = player;
@@ -182,23 +192,32 @@ void Room::revivePlayer(ServerPlayer *player){
     }
 
     broadcastInvoke("revivePlayer", player->objectName());
+    updateStateItem();
 }
 
-QString Room::getRoleStateString(){
-    int table[4] = {0};
-    foreach(ServerPlayer *player, alive_players){
-        table[player->getRoleEnum()] ++;
+static bool CompareByRole(ServerPlayer *player1, ServerPlayer *player2){
+    int role1 = player1->getRoleEnum();
+    int role2 = player2->getRoleEnum();
+
+    if(role1 != role2)
+        return role1 < role2;
+    else
+        return player1->isAlive();
+}
+
+void Room::updateStateItem(){
+    QList<ServerPlayer *> players = this->players;
+    qSort(players.begin(), players.end(), CompareByRole);
+    QString roles;
+    foreach(ServerPlayer *p, players){
+        QChar c = "ZCFN"[p->getRoleEnum()];
+        if(p->isDead())
+            c = c.toLower();
+
+        roles.append(c);
     }
 
-    char buffer[256] = {0};
-    char *p = buffer;
-    for(int i=0; i<4; i++){
-        int count = table[i];
-        memset(p, i["ZCFN"], count);
-        p += count;
-    }
-
-    return buffer;
+    broadcastInvoke("updateStateItem", roles);
 }
 
 void Room::killPlayer(ServerPlayer *victim, DamageStruct *reason){
@@ -229,7 +248,7 @@ void Room::killPlayer(ServerPlayer *victim, DamageStruct *reason){
     log.arg = victim->getRole();
     log.from = killer;
 
-    broadcastInvoke("updateStateItem", getRoleStateString());
+    updateStateItem();
 
     if(killer){
         if(killer == victim)

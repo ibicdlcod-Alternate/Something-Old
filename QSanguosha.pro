@@ -85,11 +85,13 @@ SOURCES += src/main.cpp \
 	src/ui/startscene.cpp \
 	src/ui/window.cpp \
 	src/util/detector.cpp \
-	src/util/nativesocket.cpp \
+        src/util/nativesocket.cpp \
         src/util/recorder.cpp \
         src/package/OETanA.cpp \
         src/package/OETanB.cpp \
-        swig/sanguosha_wrap.cxx
+        swig/sanguosha_wrap.cxx \
+    src/ui/pixmapanimation.cpp \
+    src/ui/sprite.cpp
 
 HEADERS += src/client/aux-skills.h \
 	src/client/client.h \
@@ -166,12 +168,14 @@ HEADERS += src/client/aux-skills.h \
 	src/ui/startscene.h \
 	src/ui/window.h \
 	src/util/detector.h \
-	src/util/nativesocket.h \
+        src/util/nativesocket.h \
         src/util/recorder.h \
 	src/util/socket.h \
         src/package/OETanA.h \
         src/package/OETanB.h \
-        oscs.h
+        oscs.h \
+    src/ui/pixmapanimation.h \
+    src/ui/sprite.h
 	
 FORMS += src/dialog/cardoverview.ui \
 	src/dialog/configdialog.ui \

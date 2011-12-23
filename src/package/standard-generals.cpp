@@ -23,6 +23,7 @@ public:
         QVariant data = QVariant::fromValue(card);
         if(room->askForSkillInvoke(caocao, "jianxiong", data)){
             room->playSkillEffect(objectName());
+            room->setEmotion(caocao, "jianxiong");
             caocao->obtainCard(card);
         }
     }
@@ -53,6 +54,7 @@ public:
             return false;
 
         room->playSkillEffect(objectName());
+        room->setEmotion(caocao, "hujia");
         QVariant tohelp = QVariant::fromValue((PlayerStar)caocao);
         foreach(ServerPlayer *liege, lieges){
             const Card *jink = room->askForCard(liege, "jink", "@hujia-jink:" + caocao->objectName(), tohelp);
@@ -134,6 +136,7 @@ public:
 
             guojia->obtainCard(judge->card);
             room->playSkillEffect(objectName());
+            room->setEmotion(guojia, "tiandu");
 
             return true;
         }
@@ -155,6 +158,7 @@ public:
             return;
 
         room->playSkillEffect(objectName());
+        room->setEmotion(guojia, "yiji");
 
         int x = damage.damage, i;
         for(i=0; i<x; i++){
@@ -181,6 +185,7 @@ public:
 
         if(from && from->isAlive() && room->askForSkillInvoke(xiahou, "ganglie", source)){
             room->playSkillEffect(objectName());
+            room->setEmotion(xiahou, "ganglie");
 
             JudgeStruct judge;
             judge.pattern = QRegExp("(.*):(heart):(.*)");
@@ -244,7 +249,6 @@ public:
 
     virtual const Card *viewAs(CardItem *card_item) const{
         Card *card = new GuicaiCard;
-        card->setSuit(card_item->getFilteredCard()->getSuit());
         card->addSubcard(card_item->getFilteredCard());
 
         return card;
@@ -277,6 +281,7 @@ public:
 
         if(card){
             // the only difference for Guicai & Guidao
+            room->setEmotion(player, "guicai");
             room->throwCard(judge->card);
 
             judge->card = Sanguosha->getCard(card->getEffectiveId());
@@ -340,6 +345,7 @@ public:
         Room *room = xuchu->getRoom();
         if(room->askForSkillInvoke(xuchu, objectName())){
             room->playSkillEffect(objectName());
+            room->setEmotion(xuchu, "luoyi");
 
             xuchu->setFlags(objectName());
             return n - 1;
@@ -361,6 +367,7 @@ public:
             Room *room = zhenji->getRoom();
             while(zhenji->askForSkillInvoke("luoshen")){
                 room->playSkillEffect(objectName());
+                room->setEmotion(zhenji, "luoshen");
 
                 JudgeStruct judge;
                 judge.pattern = QRegExp("(.*):(spade|club):(.*)");
@@ -498,6 +505,7 @@ public:
             return false;
 
         room->playSkillEffect(objectName());
+        room->setEmotion(liubei, "jijiang");
 
         QVariant tohelp = QVariant::fromValue((PlayerStar)liubei);
         foreach(ServerPlayer *liege, lieges){
@@ -611,6 +619,7 @@ public:
         Room *room = machao->getRoom();
         if(effect.from->askForSkillInvoke("tieji", QVariant::fromValue(effect))){
             room->playSkillEffect(objectName());
+            room->setEmotion(machao, "tieji");
 
             JudgeStruct judge;
             judge.pattern = QRegExp("(.*):(heart|diamond):(.*)");
@@ -641,6 +650,7 @@ public:
         {
             Room *room = zhuge->getRoom();
             room->playSkillEffect(objectName());
+            room->setEmotion(zhuge, "guanxing");
 
             int n = qMin(5, room->alivePlayerCount());
             room->doGuanxing(zhuge, room->getNCards(n, false), false);
@@ -677,6 +687,7 @@ public:
             CardMoveStar move = data.value<CardMoveStar>();
             if(move->from_place == Player::Hand)
                 player->getRoom()->playSkillEffect("kongcheng");
+                player->getRoom()->setEmotion(player, "kongcheng");
         }
 
         return false;
@@ -702,6 +713,7 @@ public:
             Room *room = yueying->getRoom();
             if(room->askForSkillInvoke(yueying, objectName())){
                 room->playSkillEffect(objectName());
+                room->setEmotion(yueying, "jizhi");
                 yueying->drawCards(1);
             }
         }
@@ -752,7 +764,6 @@ public:
         case Dying: {
                 foreach(ServerPlayer *wu, room->getOtherPlayers(sunquan)){
                     if(wu->getKingdom() == "wu"){
-                        room->playSkillEffect("jiuyuan", 1);
                         break;
                     }
                 }
@@ -764,8 +775,9 @@ public:
                 if(effect.card->inherits("Peach") && effect.from->getKingdom() == "wu"
                    && sunquan != effect.from && sunquan->hasFlag("dying"))
                 {
-                    int index = effect.from->getGeneral()->isMale() ? 2 : 3;
+                    int index = effect.from->getGeneral()->isMale() ? 1 : 2;
                     room->playSkillEffect("jiuyuan", index);
+                    room->setEmotion(sunquan, "jiuyuan");
                     sunquan->setFlags("jiuyuan");
 
                     LogMessage log;
@@ -786,7 +798,6 @@ public:
 
         case AskForPeachesDone:{
                 if(sunquan->getHp() > 0 && sunquan->hasFlag("jiuyuan"))
-                    room->playSkillEffect("jiuyuan", 4);
                 sunquan->setFlags("-jiuyuan");
 
                 break;
@@ -810,6 +821,7 @@ public:
         Room *room = zhouyu->getRoom();
         if(room->askForSkillInvoke(zhouyu, objectName())){
             room->playSkillEffect(objectName());
+            room->setEmotion(zhouyu, "yingzi");
             return n + 1;
         }else
             return n;
@@ -866,6 +878,7 @@ public:
                lumeng->askForSkillInvoke("keji"))
             {
                 lumeng->getRoom()->playSkillEffect("keji");
+                lumeng->getRoom()->setEmotion(lumeng, "keji");
 
                 return true;
             }
@@ -891,6 +904,7 @@ public:
                 Room *room = luxun->getRoom();
                 if(room->askForSkillInvoke(luxun, objectName())){
                     room->playSkillEffect(objectName());
+                    room->setEmotion(luxun, "lianying");
 
                     luxun->drawCards(1);
                 }
@@ -1004,6 +1018,7 @@ public:
                 QString prompt = "@liuli:" + effect.from->objectName();
                 room->setPlayerFlag(effect.from, "slash_source");
                 if(room->askForUseCard(daqiao, "@@liuli", prompt)){
+                    room->setEmotion(daqiao, "liuli");
                     foreach(ServerPlayer *player, players){
                         if(player->hasFlag("liuli_target")){
                             room->setPlayerFlag(effect.from, "-slash_source");
@@ -1064,6 +1079,7 @@ public:
             Room *room = sunshangxiang->getRoom();
             if(room->askForSkillInvoke(sunshangxiang, objectName())){
                 room->playSkillEffect(objectName());
+                room->setEmotion(sunshangxiang, "xiaoji");
                 sunshangxiang->drawCards(2);
             }
         }
@@ -1084,6 +1100,7 @@ public:
         SlashEffectStruct effect = data.value<SlashEffectStruct>();
         Room *room = lubu->getRoom();
         room->playSkillEffect(objectName());
+        room->setEmotion(lubu, "wushuang");
 
         QString slasher = lubu->objectName();
 
@@ -1138,6 +1155,7 @@ public:
             Room *room = diaochan->getRoom();
             if(room->askForSkillInvoke(diaochan, objectName())){
                 room->playSkillEffect(objectName());
+                room->setEmotion(diaochan, "biyue");
                 diaochan->drawCards(1);
             }
         }
@@ -1195,35 +1213,17 @@ public:
     }
 };
 
-class Tuoqiao: public ZeroCardViewAsSkill{
-public:
-    Tuoqiao():ZeroCardViewAsSkill("tuoqiao"){
-        huanzhuang_card = new HuanzhuangCard;
-    }
-
-    virtual bool isEnabledAtPlay(const Player *player) const{
-        if(player->hasUsed("HuanzhuangCard"))
-            return false;
-
-        return player->getGeneralName() == "diaochan";
-    }
-
-    virtual const Card *viewAs() const{
-        return huanzhuang_card;
-    }
-
-private:
-    HuanzhuangCard *huanzhuang_card;
-};
-
 class Qianxun: public ProhibitSkill{
 public:
     Qianxun():ProhibitSkill("qianxun"){
 
     }
 
-    virtual bool isProhibited(const Player *, const Player *, const Card *card) const{
+    virtual bool isProhibited(const Player *from, const Player *to, const Card *card) const{
+        if(!to->getMark("@duanchang") > 0){
         return card->inherits("Snatch") || card->inherits("Indulgence");
+    }
+       return false;
     }
 };
 
@@ -1234,7 +1234,7 @@ public:
     }
 
     virtual int getCorrect(const Player *from, const Player *to) const{
-        if(from->hasSkill(objectName()))
+        if(from->hasSkill(objectName()) && !from->getMark("@duanchang") > 0)
             return -1;
         else
             return 0;
@@ -1251,6 +1251,7 @@ void StandardPackage::addGenerals(){
     simayi = new General(this, "simayi", "wei", 3);
     simayi->addSkill(new Fankui);
     simayi->addSkill(new Guicai);
+    simayi->addSkill(new SPConvertSkill("zhulu", "simayi", "sp_simayi"));
 
     xiahoudun = new General(this, "xiahoudun", "wei");
     xiahoudun->addSkill(new Ganglie);
@@ -1278,6 +1279,7 @@ void StandardPackage::addGenerals(){
 
     guanyu = new General(this, "guanyu", "shu");
     guanyu->addSkill(new Wusheng);
+    guanyu->addSkill(new SPConvertSkill("yuesanshi", "guanyu", "sp_guanyu"));
 
     zhangfei = new General(this, "zhangfei", "shu");
     zhangfei->addSkill(new Skill("paoxiao"));
@@ -1294,7 +1296,7 @@ void StandardPackage::addGenerals(){
     machao = new General(this, "machao", "shu");
     machao->addSkill(new Tieji);
     machao->addSkill(new Mashu);
-    machao->addSkill(new SPConvertSkill("fanqun", "machao", "sp_machao"));
+    machao->addSkill(new SPConvertSkill("jinmachao", "machao", "sp_machao"));
 
     huangyueying = new General(this, "huangyueying", "shu", 3, false);
     huangyueying->addSkill(new Jizhi);
@@ -1345,7 +1347,7 @@ void StandardPackage::addGenerals(){
     diaochan = new General(this, "diaochan", "qun", 3, false);
     diaochan->addSkill(new Lijian);
     diaochan->addSkill(new Biyue);
-    diaochan->addSkill(new Tuoqiao);
+    diaochan->addSkill(new SPConvertSkill("muyu", "diaochan", "sp_diaochan"));
 
     // for skill cards
     addMetaObject<ZhihengCard>();

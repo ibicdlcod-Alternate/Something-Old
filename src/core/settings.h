@@ -37,9 +37,14 @@ public:
     int MaxHpScheme;
     bool AnnounceIP;
     QString Address;
+    QString LastObjname;
+    QString NodeAddress;
     bool EnableAI;
     int AIDelay;
     ushort ServerPort;
+    ushort NodePort;
+    QStringList HistoryNodeList;
+
 
     // client side
     QString HostAddress;
@@ -47,6 +52,7 @@ public:
     QString UserAvatar;
     QString Password;
     QStringList HistoryIPs;
+
     ushort DetectorPort;
     int MaxCards;
 
@@ -60,7 +66,9 @@ public:
     bool EnableEffects;
     bool EnableLastWord;
     bool EnableBgMusic;
-    float Volume;
+    float BGMVolume;
+    float EffectVolume;
+    QString EffectEdition;
 
     QString BackgroundBrush;
 };

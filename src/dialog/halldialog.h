@@ -11,16 +11,14 @@ class HallDialog : public QDialog
     Q_OBJECT
 public:
     static HallDialog *GetInstance(MainWindow *main_window);
-
-    void refreshRooms(int page);
     void joinRoom(int room_id);
-
     void roomBegin(int total, int pagelimit);
     void room(int room_id, int joined, const QString &setup_string);
     void roomEnd();
+    explicit HallDialog(MainWindow *main_window);
 
 private:
-    explicit HallDialog(MainWindow *main_window);
+    // explicit HallDialog(MainWindow *main_window); 20111214
 
     MainWindow *main_window;
     QTableWidget *table;
@@ -33,6 +31,12 @@ private slots:
     void join();
     void createRoom();
     void toggleDisplay(bool only_nonful);
+    void refreshRooms();
+    void updateRoomListTable(QString room);
+signals:
+    void refresh_rooms();
+    void create_room();
+    void join_room(int);
 };
 
 #endif // HALLDIALOG_H

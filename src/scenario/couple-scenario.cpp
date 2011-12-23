@@ -117,13 +117,12 @@ CoupleScenario::CoupleScenario()
     rule = new CoupleScenarioRule(this);
 
     map["caopi"] = "zhenji";
-    map["guojia"] = "simayi";
+    map["simayi"] = "zhangchunhua";
     map["liubei"] = "sunshangxiang";
     map["zhugeliang"] = "huangyueying";
     map["menghuo"] = "zhurong";
     map["zhouyu"] = "xiaoqiao";
     map["lubu"] = "diaochan";
-    map["zhangfei"] = "xiahoujuan";
     map["sunjian"] = "wuguotai";
     map["sunce"] = "daqiao";
 

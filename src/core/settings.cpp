@@ -12,7 +12,7 @@
 
 Settings Config;
 
-static const qreal ViewWidth = 1280 * 0.8;
+static const qreal ViewWidth = 1280 * 0.8-4;
 static const qreal ViewHeight = 800 * 0.8;
 
 Settings::Settings()
@@ -23,7 +23,7 @@ Settings::Settings()
 
 void Settings::init(){
     if(!qApp->arguments().contains("-server")){
-        QString font_path = value("DefaultFontPath", "font/font.ttf").toString();
+        QString font_path = value("DefaultFontPath", "font/girl.ttf").toString();
         int font_id = QFontDatabase::addApplicationFont(font_path);
         if(font_id!=-1){
             QString font_family = QFontDatabase::applicationFontFamilies(font_id).first();
@@ -46,20 +46,7 @@ void Settings::init(){
 
     CountDownSeconds = value("CountDownSeconds", 3).toInt();
     GameMode = value("GameMode", "02p").toString();
-
-
-    if(!contains("BanPackages")){
-        QStringList banlist;
-        banlist << "nostalgia" << "yitian" << "wisdom" << "test"
-                << "disaster" << "god" << "YJCM" << "yitian_cards"
-                << "sp" << "sp_cards"
-                << "joy" << "joy_equip";
-
-        setValue("BanPackages", banlist);
-    }
-
     BanPackages = value("BanPackages").toStringList();
-
     ContestMode = value("ContestMode", false).toBool();
     FreeChoose = value("FreeChoose", false).toBool();
     ForbidSIMC = value("ForbidSIMC", false).toBool();
@@ -85,9 +72,13 @@ void Settings::init(){
 
     HostAddress = value("HostAddress", "127.0.0.1").toString();
     UserAvatar = value("UserAvatar", "zhangliao").toString();
+    LastObjname = value("LastObjname").toString();
     HistoryIPs = value("HistoryIPs").toStringList();
+    HistoryNodeList = value("HistoryNodeList").toStringList();
     DetectorPort = value("DetectorPort", 9526u).toUInt();
     MaxCards = value("MaxCards", 15).toInt();
+    NodeAddress = value("NodeAddress").toString();
+    NodePort = value("ServerPort").toUInt();
 
     FitInView = value("FitInView", false).toBool();
     EnableHotKey = value("EnableHotKey", true).toBool();
@@ -99,9 +90,11 @@ void Settings::init(){
     EnableEffects = value("EnableEffects", true).toBool();
     EnableLastWord = value("EnableLastWord", true).toBool();
     EnableBgMusic = value("EnableBgMusic", true).toBool();
-    Volume = value("Volume", 1.0f).toFloat();
+    BGMVolume = value("BGMVolume", 1.0f).toFloat();
+    EffectVolume = value("EffectVolume", 1.0f).toFloat();
+    EffectEdition = value("EffectEdition", "classical/").toString();
 
-    BackgroundBrush = value("BackgroundBrush", "backdrop/chibi.jpg").toString();
+    BackgroundBrush = value("BackgroundBrush", "backdrop/mid-autumn.jpg").toString();
 
     if(!contains("1v1/Banlist")){
         QStringList banlist;

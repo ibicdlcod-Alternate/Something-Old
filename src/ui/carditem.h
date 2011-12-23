@@ -14,6 +14,9 @@ class CardItem : public Pixmap
     Q_OBJECT
 
 public:
+
+    void writeCardDesc(QString strInfo); // 20111218 by highlandz
+
     CardItem(const Card *card);
     CardItem(const QString &general_name);
 
@@ -23,7 +26,7 @@ public:
     const Card *getCard() const;
     void setHomePos(QPointF home_pos);
     QPointF homePos() const;
-    void goBack(bool kieru = false,bool fadein = true,bool fadeout = true);
+    void goBack(bool kieru = false);
     const QPixmap &getSuitPixmap() const;
     const QPixmap &getIconPixmap() const;
     void setFrame(const QString &frame);
@@ -41,14 +44,11 @@ public:
     static const int PendingY = NormalY - 40;
     static CardItem *FindItem(const QList<CardItem *> &items, int card_id);
 
-
 protected:
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event);
     virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
     virtual void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
     virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event);
-    virtual void hoverEnterEvent(QGraphicsSceneHoverEvent *event);
-    virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent *event);
     virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);    
 
 private:
@@ -56,15 +56,14 @@ private:
     QPixmap suit_pixmap, icon_pixmap;
     QPointF home_pos;
     QGraphicsPixmapItem *frame, *avatar;
-    bool auto_back,is_pending;
+    bool auto_back;
+
 signals:
     void toggle_discards();
     void clicked();
     void double_clicked();
     void thrown();
     void released();
-    void enter_hover();
-    void leave_hover();
 };
 
 #endif // CARDITEM_H

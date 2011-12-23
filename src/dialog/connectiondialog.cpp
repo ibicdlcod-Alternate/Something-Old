@@ -23,6 +23,10 @@ ConnectionDialog::ConnectionDialog(QWidget *parent) :
     ui->hostComboBox->addItems(Config.HistoryIPs);
     ui->hostComboBox->lineEdit()->setText(Config.HostAddress);
 
+    //20111214
+    // ui->connectButton->setFocus();
+    ui->getNodeListButton->setFocus();
+
     ui->portLineEdit->setText(QString::number(Config.ServerPort));
     ui->portLineEdit->setValidator(new QIntValidator(1, 9999, ui->portLineEdit));
 
@@ -44,10 +48,23 @@ ConnectionDialog::ConnectionDialog(QWidget *parent) :
 
     ui->avatarList->hide();
 
+    // 20111218 by highlandz
+    ui->nodeListTable->hide();
+    ui->nodeListTable->setSelectionBehavior(QAbstractItemView::SelectRows); //整行选中的方式
+    ui->nodeListTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->nodeListTable->setSelectionMode(QAbstractItemView::SingleSelection);
+
+
     ui->reconnectionCheckBox->setChecked(Config.value("EnableReconnection", false).toBool());
 
     setFixedHeight(height());
     setFixedWidth(ShrinkWidth);
+
+    // 20111220 by Highlandz
+    // disable reconnect check box,now will auto reconnect
+    ui->reconnectionCheckBox->setChecked(false);
+    ui->reconnectionCheckBox->setVisible(false);
+    ui->reconnectionCheckBox->setEnabled(false);
 }
 
 ConnectionDialog::~ConnectionDialog()
@@ -85,6 +102,7 @@ void ConnectionDialog::on_connectButton_clicked()
 void ConnectionDialog::on_changeAvatarButton_clicked()
 {
     if(ui->avatarList->isVisible()){
+        ui->nodeListTable->hide();
         QListWidgetItem *selected = ui->avatarList->currentItem();
         if(selected)
             on_avatarList_itemDoubleClicked(selected);
@@ -95,6 +113,7 @@ void ConnectionDialog::on_changeAvatarButton_clicked()
     }else{
         ui->avatarList->show();
         setFixedWidth(ExpandWidth);
+        ui->nodeListTable->hide();
     }
 }
 
@@ -187,4 +206,111 @@ void UdpDetectorDialog::chooseAddress(QListWidgetItem *item){
 
     QString address = item->data(Qt::UserRole).toString();
     emit address_chosen(address);
+}
+
+
+// 20111218 by highlandz
+void ConnectionDialog::on_getNodeListButton_clicked()
+{
+    ui->connectButton->setEnabled(true);
+    ui->avatarList->hide();
+    // clear table
+    for(;ui->nodeListTable->rowCount();)
+    {
+       ui->nodeListTable->removeRow(0);
+    }
+    ui->nodeListTable->setColumnWidth(0,200);
+    ui->nodeListTable->setColumnWidth(1,60);
+    ui->nodeListTable->setColumnWidth(2,160);
+    ui->nodeListTable->setColumnWidth(3,100);
+    ui->nodeListTable->setColumnWidth(4,60);
+    ui->nodeListTable->setColumnWidth(5,60);
+    ui->nodeListTable->setColumnWidth(6,60);
+    ui->nodeListTable->setColumnWidth(7,60);
+
+    ui->nodeListTable->show();
+    QStringList headers;
+    headers << tr("Address:") << tr("Port:") << tr("ServerName:") << tr("Version:") << tr("Mode:") << tr("Rooms:") << tr("Players:") << tr("Network:");
+    ui->nodeListTable->setHorizontalHeaderLabels(headers);
+    ui->nodeListTable->setColumnHidden(0,false);
+    ui->nodeListTable->setColumnHidden(1,false);
+    ui->nodeListTable->setColumnHidden(2,true);
+    ui->nodeListTable->setColumnHidden(3,true);
+    setFixedWidth(ExpandWidth);
+
+    QString username = ui->nameLineEdit->text();
+
+    if(username.isEmpty()){
+        QMessageBox::warning(this, tr("Warning"), tr("The user name can not be empty!"));
+        return;
+    }
+
+    Config.UserName = username;
+    Config.HostAddress = ui->hostComboBox->lineEdit()->text();
+    Config.Password = ui->passwordLineEdit->text();
+
+    bool ok;
+    int port = ui->portLineEdit->text().toInt(&ok);
+    if(port){
+        Config.ServerPort = port;
+        Config.setValue("ServerPort", Config.ServerPort);
+    }
+    emit(qnodelist(ui->hostComboBox->lineEdit()->text(), port)) ;
+}
+
+void ConnectionDialog::updateNodeListTable(QString node)
+{
+    QStringList tmp=node.split(":");
+    if(tmp.count()==3)
+    {
+        ui->nodeListTable->setColumnHidden(0,false);
+        ui->nodeListTable->setColumnHidden(1,false);
+        ui->nodeListTable->setColumnHidden(2,true);
+        ui->nodeListTable->setColumnHidden(3,true);
+        int newRowCount =ui->nodeListTable->rowCount();
+        ui->nodeListTable->insertRow(newRowCount);
+        ui->nodeListTable->setItem(newRowCount,0,new QTableWidgetItem(tmp[0]));
+        ui->nodeListTable->setItem(newRowCount,1,new QTableWidgetItem(tmp[1]));
+        ui->nodeListTable->setItem(newRowCount,4,new QTableWidgetItem(tmp[2]));
+        emit(qnodeinfo(tmp[0] ,tmp[1].toInt()));
+    }
+    else if(tmp.count()==9)
+    {
+        ui->nodeListTable->setColumnHidden(0,true);
+        ui->nodeListTable->setColumnHidden(1,true);
+        ui->nodeListTable->setColumnHidden(2,false);
+        ui->nodeListTable->setColumnHidden(3,false);
+        for (int row = 0; row < ui->nodeListTable->rowCount(); ++row)
+        {
+            QString addr,port,mode;
+            addr=ui->nodeListTable->item(row, 0)->text();
+            port=ui->nodeListTable->item(row, 1)->text();
+            mode=ui->nodeListTable->item(row, 4)->text();
+            if(addr==tmp[0] && port==tmp[1] && mode==tmp[4])
+            {
+                ui->nodeListTable->setItem(row,2,new QTableWidgetItem(tmp[2]));
+                ui->nodeListTable->setItem(row,3,new QTableWidgetItem(tmp[3]));
+                ui->nodeListTable->setItem(row,4,new QTableWidgetItem(tmp[4]+tmp[5]));
+                ui->nodeListTable->setItem(row,5,new QTableWidgetItem(tmp[6]));
+                ui->nodeListTable->setItem(row,6,new QTableWidgetItem(tmp[7]));
+                ui->nodeListTable->setItem(row,7,new QTableWidgetItem(tmp[8]+"ms"));
+            }
+        }
+    }
+}
+
+void ConnectionDialog::on_nodeListTable_itemDoubleClicked(QTableWidgetItem* item)
+{
+    int row = ui->nodeListTable->currentRow();
+    ui->hostComboBox->lineEdit()->setText(ui->nodeListTable->item(row, 0)->text());
+    ui->portLineEdit->setText( ui->nodeListTable->item(row,1)->text());
+    on_connectButton_clicked();
+
+}
+
+void ConnectionDialog::on_nodeListTable_itemSelectionChanged()
+{
+    int row = ui->nodeListTable->currentRow();
+    ui->hostComboBox->lineEdit()->setText(ui->nodeListTable->item(row, 0)->text());
+    ui->portLineEdit->setText( ui->nodeListTable->item(row,1)->text());
 }

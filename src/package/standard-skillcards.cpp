@@ -13,6 +13,7 @@ ZhihengCard::ZhihengCard(){
 
 void ZhihengCard::use(Room *room, ServerPlayer *source, const QList<ServerPlayer *> &) const{
     room->throwCard(this);
+    room->setEmotion(source, "zhiheng");
     if(source->isAlive())
         room->drawCards(source, subcards.length());
 }
@@ -35,6 +36,7 @@ void RendeCard::use(Room *room, ServerPlayer *source, const QList<ServerPlayer *
         target = targets.first();
 
     room->moveCardTo(this, target, Player::Hand, false);
+    room->setEmotion(source, "rende");
 
     int old_value = source->getMark("rende");
     int new_value = old_value + subcards.length();
@@ -62,6 +64,7 @@ bool JieyinCard::targetFilter(const QList<const Player *> &targets, const Player
 
 void JieyinCard::onEffect(const CardEffectStruct &effect) const{
     Room *room = effect.from->getRoom();
+    room->setEmotion(effect.from, "jieyin");
 
     RecoverStruct recover;
     recover.card = this;
@@ -105,7 +108,7 @@ void TuxiCard::onEffect(const CardEffectStruct &effect) const{
     room->moveCardTo(card, effect.from, Player::Hand, false);
 
     room->setEmotion(effect.to, "bad");
-    room->setEmotion(effect.from, "good");
+    room->setEmotion(effect.from, "tuxi");
 }
 
 FanjianCard::FanjianCard(){
@@ -116,6 +119,7 @@ void FanjianCard::onEffect(const CardEffectStruct &effect) const{
     ServerPlayer *zhouyu = effect.from;
     ServerPlayer *target = effect.to;
     Room *room = zhouyu->getRoom();
+    room->setEmotion(zhouyu, "fanjian");
 
     int card_id = zhouyu->getRandomHandCardId();
     const Card *card = Sanguosha->getCard(card_id);
@@ -137,7 +141,17 @@ void FanjianCard::onEffect(const CardEffectStruct &effect) const{
         damage.from = zhouyu;
         damage.to = target;
 
-        room->damage(damage);
+        if(damage.from->hasSkill("jueqing")){
+            LogMessage log;
+            log.type = "#Jueqing";
+            log.from = damage.from;
+            log.to << damage.to;
+            log.arg = QString::number(1);
+            room->sendLog(log);
+            room->loseHp(damage.to, 1);
+        }else{
+            room->damage(damage);
+        }
     }
 }
 
@@ -147,6 +161,7 @@ KurouCard::KurouCard(){
 
 void KurouCard::use(Room *room, ServerPlayer *source, const QList<ServerPlayer *> &) const{
     room->loseHp(source);
+    room->setEmotion(source, "kurou");
     if(source->isAlive())
         room->drawCards(source, 2);
 }
@@ -170,8 +185,9 @@ bool LijianCard::targetsFeasible(const QList<const Player *> &targets, const Pla
     return targets.length() == 2;
 }
 
-void LijianCard::use(Room *room, ServerPlayer *, const QList<ServerPlayer *> &targets) const{
+void LijianCard::use(Room *room, ServerPlayer *source, const QList<ServerPlayer *> &targets) const{
     room->throwCard(this);
+    room->setEmotion(source, "lijian");
 
     ServerPlayer *to = targets.at(0);
     ServerPlayer *from = targets.at(1);
@@ -201,6 +217,7 @@ bool QingnangCard::targetsFeasible(const QList<const Player *> &targets, const P
 
 void QingnangCard::use(Room *room, ServerPlayer *source, const QList<ServerPlayer *> &targets) const{
     room->throwCard(this);
+    room->setEmotion(source, "qingnang");
 
     ServerPlayer *target = targets.value(0, source);
 
@@ -263,6 +280,7 @@ bool JijiangCard::targetFilter(const QList<const Player *> &targets, const Playe
 }
 
 void JijiangCard::use(Room *room, ServerPlayer *liubei, const QList<ServerPlayer *> &targets) const{
+    room->setEmotion(liubei, "jijiang");
     QList<ServerPlayer *> lieges = room->getLieges("shu", liubei);
     const Card *slash = NULL;
 

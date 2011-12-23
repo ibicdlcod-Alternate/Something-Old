@@ -35,22 +35,25 @@ extern "C" {
     Package *NewFire();
     Package *NewThicket();
     Package *NewMountain();
-    Package *NewGod();
-    Package *NewYitian();
-    Package *NewSP();
+    Package *NewThunder();
+    Package *NewShadow();
     Package *NewYJCM();
-    Package *NewWisdom();
-    Package *NewTest();
+    Package *NewEJCM();
+    Package *NewSP();
+    Package *NewGod();
+    //Package *NewYitian();
+    //Package *NewWisdom();
+    //Package *NewTest();
 
     Package *NewStandardCard();
     Package *NewStandardExCard();
     Package *NewManeuvering();
     Package *NewSPCard();
     Package *NewNostalgia();
-    Package *NewYitianCard();
-    Package *NewJoy();
-    Package *NewDisaster();
-    Package *NewJoyEquip();
+    //Package *NewYitianCard();
+    //Package *NewJoy();
+    //Package *NewDisaster();
+    //Package *NewJoyEquip();
 
     Scenario *NewGuanduScenario();
     Scenario *NewFanchengScenario();
@@ -74,22 +77,25 @@ Engine::Engine()
     addPackage(NewFire());
     addPackage(NewThicket());
     addPackage(NewMountain());
-    addPackage(NewGod());
-    addPackage(NewSP());
+    addPackage(NewThunder());
+    addPackage(NewShadow());
     addPackage(NewYJCM());
-    addPackage(NewYitian());
-    addPackage(NewWisdom());
-    addPackage(NewTest());
+    addPackage(NewEJCM());
+    addPackage(NewSP());
+    addPackage(NewGod());
+    //addPackage(NewYitian());
+    //addPackage(NewWisdom());
+    //addPackage(NewTest());
 
     addPackage(NewStandardCard());
     addPackage(NewStandardExCard());
     addPackage(NewManeuvering());
     addPackage(NewSPCard());
-    addPackage(NewYitianCard());
+    //addPackage(NewYitianCard());
     addPackage(NewNostalgia());
-    addPackage(NewJoy());
-    addPackage(NewDisaster());
-    addPackage(NewJoyEquip());
+    //addPackage(NewJoy());
+    //addPackage(NewDisaster());
+    //addPackage(NewJoyEquip());
 
     addScenario(NewGuanduScenario());
     addScenario(NewFanchengScenario());
@@ -355,11 +361,11 @@ SkillCard *Engine::cloneSkillCard(const QString &name) const{
 }
 
 QString Engine::getVersion() const{
-    return "20111113";
+    return "OLMOD20111221";
 }
 
 QString Engine::getVersionName() const{
-    return tr("Chibi");
+    return tr("Meihua");
 }
 
 QStringList Engine::getExtensions() const{

@@ -136,7 +136,7 @@ void Player::clearFlags(){
 }
 
 int Player::getAttackRange() const{
-    if(hasFlag("tianyi_success"))
+    if(hasFlag("tianyi_success") && !hasFlag("baiban"))
         return 1000;
 
     if(weapon)
@@ -301,7 +301,7 @@ bool Player::hasLordSkill(const QString &skill_name) const{
 
     if(hasSkill("weidi")){
         foreach(const Player *player, getSiblings()){
-            if(player->isLord())
+            if(player->isLord() && !player->hasFlag("baiban"))
                 return player->hasLordSkill(skill_name);
         }
     }
@@ -436,9 +436,11 @@ Player::Phase Player::getPhase() const{
 }
 
 void Player::setPhase(Phase phase){
-    this->phase = phase;
+    if(this->phase != phase){
+        this->phase = phase;
 
-    emit phase_changed();
+        emit phase_changed();
+    }
 }
 
 bool Player::faceUp() const{
@@ -461,10 +463,10 @@ int Player::getMaxCards() const{
             extra = 1;
     }
 
-    int juejing = hasSkill("juejing") ? 2 : 0;
+    int juejing = hasSkill("juejing") && !hasFlag("baiban") ? 2 : 0;
 
     int xueyi = 0;
-    if(hasLordSkill("xueyi")){
+    if(hasLordSkill("xueyi") && !hasFlag("baiban")){
         QList<const Player *> players = getSiblings();
         foreach(const Player *player, players){
             if(player->isAlive() && player->getKingdom() == "qun")
@@ -473,7 +475,7 @@ int Player::getMaxCards() const{
     }
 
     int shenwei = 0;
-    if(hasSkill("shenwei"))
+    if(hasSkill("shenwei") && !hasFlag("baiban"))
         shenwei = 2;
 
     return qMax(hp,0) + extra + juejing + xueyi + shenwei;
@@ -696,11 +698,11 @@ bool Player::isProhibited(const Player *to, const Card *card) const{
 }
 
 bool Player::canSlashWithoutCrossbow() const{
-    if(hasSkill("paoxiao"))
+    if(hasSkill("paoxiao") && !hasFlag("baiban"))
         return true;
 
     int slash_count = getSlashCount();
-    if(hasFlag("tianyi_success"))
+    if(hasFlag("tianyi_success") && !hasFlag("baiban"))
         return slash_count < 2;
     else
         return slash_count < 1;

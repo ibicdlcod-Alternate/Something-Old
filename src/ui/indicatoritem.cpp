@@ -1,5 +1,6 @@
 #include "indicatoritem.h"
 #include "engine.h"
+#include "settings.h"
 
 #include <QPainter>
 #include <QGraphicsBlurEffect>
@@ -17,7 +18,7 @@ IndicatorItem::IndicatorItem(const QPointF &start, const QPointF &real_finish, P
 
     //setGraphicsEffect(halo);
     color = Sanguosha->getKingdomColor(player->getKingdom());
-    width = player->isLord() ? 4 : 3;
+    width = player->isLord() ? Config.value("IndicatorWidth").toInt()+1 : Config.value("IndicatorWidth").toInt();
 }
 
 void IndicatorItem::doAnimation(){
@@ -26,12 +27,11 @@ void IndicatorItem::doAnimation(){
     QPropertyAnimation *animation = new QPropertyAnimation(this, "finish");
     animation->setEndValue(real_finish);
     animation->setEasingCurve(QEasingCurve::OutCubic);
-    animation->setDuration(500);
+    animation->setDuration(Config.value("IndicatorDuration").toInt());
 
     QPropertyAnimation *pause = new QPropertyAnimation(this,"opacity");
     pause->setEndValue(0);
     pause->setEasingCurve(QEasingCurve::InQuart);
-    pause->setDuration(600);
 
     group->addAnimation(animation);
     group->addAnimation(pause);
@@ -51,8 +51,6 @@ void IndicatorItem::setFinish(const QPointF &finish){
 }
 
 void IndicatorItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget){
-    painter->setRenderHint(QPainter::Antialiasing);
-
     QPen pen(color);
     pen.setWidthF(width);
 
@@ -62,7 +60,7 @@ void IndicatorItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *opt
     QLinearGradient linearGrad(start - QPoint(baseX,baseY),
                                finish - QPoint(baseX,baseY));
     linearGrad.setColorAt(0, color.darker());
-    linearGrad.setColorAt(1, color.lighter());
+    linearGrad.setColorAt(1, Qt::white);
 
 
     QBrush brush(linearGrad);
@@ -70,16 +68,11 @@ void IndicatorItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *opt
 
     painter->setPen(pen);
     painter->drawLine(mapFromScene(start), mapFromScene(finish));
-
-    QPen pen2(QColor(200,200,200,130));
-    pen2.setWidth(6);
-    painter->setPen(pen2);
-    painter->drawLine(mapFromScene(start), mapFromScene(finish));
 }
 
 QRectF IndicatorItem::boundingRect() const{
     qreal width = qAbs(start.x() - real_finish.x());
     qreal height = qAbs(start.y() - real_finish.y());
 
-    return QRectF(0, 0, width, height).adjusted(-2,-2,2,2);
+    return QRectF(0, 0, width, height);
 }

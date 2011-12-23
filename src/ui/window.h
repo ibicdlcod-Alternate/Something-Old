@@ -1,7 +1,7 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
-#include <QGraphicsScale>
+class QGraphicsRotation;
 
 #include <QGraphicsObject>
 
@@ -26,10 +26,9 @@ public slots:
 
 private:
     QString title;
-    QGraphicsScale *scaleTransform;
+    QGraphicsRotation *yRotation;
     QSizeF size;
     bool keep_when_disappear;
-    QImage *outimg;
 };
 
 #endif // WINDOW_H

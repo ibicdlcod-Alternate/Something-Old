@@ -3,6 +3,7 @@
 #include "skill.h"
 #include "package.h"
 #include "client.h"
+#include "settings.h"
 
 #include <QSize>
 
@@ -145,7 +146,7 @@ QString General::getSkillDescription() const{
 }
 
 void General::lastWord() const{
-    QString filename = QString("audio/death/%1.ogg").arg(objectName());
+    QString filename = QString("audio/death/%1%2.ogg").arg(Config.value("EffectEdition").toString()).arg(objectName());
     Sanguosha->playEffect(filename);
 }
 

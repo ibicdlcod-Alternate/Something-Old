@@ -30,6 +30,7 @@ void QuhuCard::use(Room *room, ServerPlayer *xunyu, const QList<ServerPlayer *> 
     ServerPlayer *tiger = targets.first();
 
     room->playSkillEffect("quhu", 1);
+    room->setEmotion(xunyu, "quhu");
 
     bool success = xunyu->pindian(tiger, "quhu", this);
     if(success){
@@ -51,22 +52,50 @@ void QuhuCard::use(Room *room, ServerPlayer *xunyu, const QList<ServerPlayer *> 
             return;
         }
 
-        room->playSkillEffect("#tunlang");
         ServerPlayer *wolf = room->askForPlayerChosen(xunyu, wolves, "quhu");
+
+        LogMessage log;
+        log.type = "#QuhuFightWolf";
+        log.from = tiger;
+        log.to << wolf;
+        room->sendLog(log);
 
         DamageStruct damage;
         damage.from = tiger;
         damage.to = wolf;
-
-        room->damage(damage);
-
+        if(damage.from->hasSkill("jueqing")){
+            LogMessage log;
+            log.type = "#Jueqing";
+            log.from = damage.from;
+            log.to << damage.to;
+            log.arg = QString::number(1);
+            room->sendLog(log);
+            room->loseHp(damage.to, 1);
+        }else{
+            room->damage(damage);
+        }
     }else{
+        LogMessage log;
+        log.type = "#QuhuFailed";
+        log.from = xunyu;
+        log.to << tiger;
+        room->sendLog(log);
+
         DamageStruct damage;
         damage.card = NULL;
         damage.from = tiger;
         damage.to = xunyu;
-
-        room->damage(damage);
+        if(damage.from->hasSkill("jueqing")){
+            LogMessage log;
+            log.type = "#Jueqing";
+            log.from = damage.from;
+            log.to << damage.to;
+            log.arg = QString::number(1);
+            room->sendLog(log);
+            room->loseHp(damage.to, 1);
+        }else{
+            room->damage(damage);
+        }
     }
 }
 
@@ -88,6 +117,7 @@ void JiemingCard::onEffect(const CardEffectStruct &effect) const{
     if(x <= 0)
         return;
 
+    effect.from->getRoom()->setEmotion(effect.from, "jieming");
     effect.to->drawCards(x);
 }
 
@@ -173,7 +203,19 @@ void QiangxiCard::onEffect(const CardEffectStruct &effect) const{
     damage.from = effect.from;
     damage.to = effect.to;
 
-    room->damage(damage);
+    room->setEmotion(effect.from, "qiangxi");
+
+    if(damage.from->hasSkill("jueqing")){
+        LogMessage log;
+        log.type = "#Jueqing";
+        log.from = damage.from;
+        log.to << damage.to;
+        log.arg = QString::number(1);
+        room->sendLog(log);
+        room->loseHp(damage.to, 1);
+    }else{
+        room->damage(damage);
+    }
 }
 
 class Qiangxi: public ViewAsSkill{
@@ -277,6 +319,7 @@ public:
                 room->setPlayerMark(shuangxiong, "shuangxiong", 0);
             }else if(shuangxiong->getPhase() == Player::Draw){
                 if(shuangxiong->askForSkillInvoke(objectName())){
+                    room->setEmotion(shuangxiong, "shuangxiong");
                     shuangxiong->setFlags("shuangxiong");
 
                     JudgeStruct judge;
@@ -321,6 +364,7 @@ public:
             Room *room = pangde->getRoom();
             if(pangde->askForSkillInvoke(objectName(), data)){
                 room->playSkillEffect(objectName());
+                room->setEmotion(pangde, "mengjin");
                 int to_throw = room->askForCardChosen(pangde, effect.to, "he", objectName());
                 room->throwCard(to_throw);
             }
@@ -366,8 +410,13 @@ public:
 
         Room *room = pangtong->getRoom();
         if(pangtong->askForSkillInvoke(objectName(), data)){
-            room->broadcastInvoke("animate", "lightbox:$niepan");
-            room->playSkillEffect(objectName());
+            int x = qrand()%2;
+            if(x == 0)
+                room->broadcastInvoke("animate", "lightbox:$niepan1");
+            else
+                room->broadcastInvoke("animate", "lightbox:$niepan2");
+            room->playSkillEffect(objectName(),x+1);
+            room->setEmotion(pangtong, "niepan");
 
             pangtong->loseMark("@nirvana");
 
@@ -424,6 +473,8 @@ public:
 
         Room *room = wolong->getRoom();
         if(wolong->askForSkillInvoke(objectName())){
+            room->setEmotion(wolong, "bazhen");
+
             JudgeStruct judge;
             judge.pattern = QRegExp("(.*):(heart|diamond):(.*)");
             judge.good = true;
@@ -436,10 +487,8 @@ public:
                 Jink *jink = new Jink(Card::NoSuit, 0);
                 jink->setSkillName(objectName());
                 room->provide(jink);
-                room->setEmotion(wolong, "good");
                 return true;
-            }else
-                room->setEmotion(wolong, "bad");
+            }
         }
 
         return false;
@@ -484,6 +533,7 @@ bool TianyiCard::targetFilter(const QList<const Player *> &targets, const Player
 }
 
 void TianyiCard::use(Room *room, ServerPlayer *taishici, const QList<ServerPlayer *> &targets) const{
+    room->setEmotion(taishici, "tianyi");
     bool success = taishici->pindian(targets.first(), "tianyi", this);
     if(success){
         room->setPlayerFlag(taishici, "tianyi_success");
@@ -570,6 +620,7 @@ FirePackage::FirePackage()
     pangde = new General(this, "pangde", "qun");
     pangde->addSkill(new Mengjin);
     pangde->addSkill("mashu");
+    pangde->addSkill(new SPConvertSkill("xiangwei", "pangde", "sp_pangde"));
 
     addMetaObject<QuhuCard>();
     addMetaObject<JiemingCard>();

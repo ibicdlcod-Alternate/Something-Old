@@ -361,7 +361,7 @@ function SmartAI:objectiveLevel(player)
 
 		if not hasLoyal then
 			if #players == 2 then
-				if players[1]:getHp() < players[2]:getHp() then 
+				if players[1]:getHp() < players[2]:getHp() then
 					if players[1] == player then return -1 else return 5 end
 				end
 			end
@@ -748,7 +748,7 @@ sgs.ai_skill_invoke = {
 		for _, enemy in ipairs(self.enemies) do
 			if enemy:hasSkill("guidao") and enemy:getCards("he"):length()>2 then return false end
 		end
-		
+
 		if self:getDamagedEffects(self) then return false end
 		if sgs.hujiasource and not self:isFriend(sgs.hujiasource) then return false end
 		if sgs.lianlisource and not self:isFriend(sgs.lianlisource) then return false end
@@ -899,6 +899,12 @@ function SmartAI:slashIsEffective(slash, to)
 		end
 	end
 
+	if to:hasSkill("juhun") and to:getHp()==1 then
+		if slash:isRed() then
+			return false
+		end
+	end
+
 	local nature = {
 		Slash = sgs.DamageStruct_Normal,
 		FireSlash = sgs.DamageStruct_Fire,
@@ -945,11 +951,11 @@ function SmartAI:slashIsAvailable(player)
 	player = player or self.player
 	if player:hasFlag("tianyi_failed") or player:hasFlag("xianzhen_failed") then return false end
 
-	if player:hasWeapon("crossbow") or player:hasSkill("paoxiao") then
+	if player:hasWeapon("crossbow") or (player:hasSkill("paoxiao") and player:getMark("@duanchang")<=0) then
 		return true
 	end
 
-	if player:hasFlag("tianyi_success") then
+	if (player:hasFlag("tianyi_success") and player:getMark("@duanchang")<=0) then
 		return (player:usedTimes("Slash") + player:usedTimes("FireSlash") + player:usedTimes("ThunderSlash")) < 2
 	else
 		return (player:usedTimes("Slash") + player:usedTimes("FireSlash") + player:usedTimes("ThunderSlash")) < 1
@@ -982,6 +988,7 @@ local function isCompulsoryView(card, class_name, player, card_place)
 end
 
 local function getSkillViewCard(card, class_name, player, card_place)
+    if player:getMark("@duanchang") > 0 then return end
 	local suit = card:getSuitString()
 	local number = card:getNumberString()
 	local card_id = card:getEffectiveId()
@@ -2040,17 +2047,17 @@ function SmartAI:getTurnUse()
 	self.weaponUsed = false
 
 	if self.player:isLord() then self.retain_thresh = 6 end
-	if self.player:hasFlag("tianyi_success") then
+	if (self.player:hasFlag("tianyi_success") and self.player:getMark("@duanchang")<=0) then
 		slashAvail = 2
 		self.slash_targets = 2
 		self.slash_distance_limit = true
 	end
 
-	self:fillSkillCards(cards)
+	if self.player:getMark("@duanchang")==0 then self:fillSkillCards(cards) end
 
 	self:sortByUseValue(cards)
 
-	if self.player:hasSkill("paoxiao") or
+	if (self.player:hasSkill("paoxiao") and self.player:getMark("@duanchang")<=0) or
 		(
 			self.player:getWeapon() and
 			(self.player:getWeapon():objectName() == "crossbow")
@@ -3025,7 +3032,7 @@ function SmartAI:askForCard(pattern, prompt, data)
 
 			end
 		end
-		
+
 		if self:getDamagedEffects(self) then return "." end
 		return self:getCardId("Jink") or "."
 	end
@@ -3615,6 +3622,7 @@ function SmartAI:cardProhibit(card, to)
 	if card:inherits("Slash") then return self:slashProhibit(card, to) end
 	if card:getTypeId() == sgs.Card_Trick then
 		if card:isBlack() and to:hasSkill("weimu") then return true end
+		if card:isRed() and to:hasSkill("juhun") and to:getHp()==1 then return true end
 		if card:inherits("Indulgence") or card:inherits("Snatch") and to:hasSkill("qianxun") then return true end
 		if card:inherits("Duel") and to:hasSkill("kongcheng") and to:isKongcheng() then return true end
 	end
@@ -3623,13 +3631,13 @@ end
 
 function SmartAI:getDamagedEffects(self, player)
 	player = player or self.player
-	
+
 	if (player:getHp() > 1 or player:hasSkill("buqu")) and self:hasSkills(sgs.masochism_skill, player) then
 		local attacker = self.room:getCurrent()
 		if self:isEnemy(attacker, player) and attacker:getHp() <= 1 then
 			if self:hasSkills("ganglie|enyuan", player) then return true end
 		end
-		
+
 		if player:hasSkill("jieming") then
 			for _, friend in ipairs(self:getFriends(player)) do
 				if math.min(friend:getMaxHP(), 5) - friend:getHandcardNum() >= 3 then return true end
@@ -3638,7 +3646,7 @@ function SmartAI:getDamagedEffects(self, player)
 			if player:getLostHp() <= 1 then return true end
 		end
 	end
-	
+
 	return false
 end
 
@@ -3672,3 +3680,6 @@ dofile "lua/ai/fancheng-ai.lua"
 dofile "lua/ai/hulaoguan-ai.lua"
 
 dofile "lua/ai/guanxing-ai.lua"
+
+dofile "lua/ai/shadowthunder-ai.lua"
+dofile "lua/ai/ejcm-ai.lua"

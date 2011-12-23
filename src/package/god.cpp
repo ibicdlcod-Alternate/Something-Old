@@ -14,6 +14,7 @@ bool GongxinCard::targetFilter(const QList<const Player *> &targets, const Playe
 }
 
 void GongxinCard::onEffect(const CardEffectStruct &effect) const{
+    effect.from->getRoom()->setEmotion(effect.from, "gongxin");
     effect.from->getRoom()->doGongxin(effect.from, effect.to);
 }
 
@@ -123,6 +124,7 @@ public:
             return false;
 
         room->playSkillEffect(objectName());
+        room->setEmotion(shenlumeng, "shelie");
 
         QList<int> card_ids = room->getNCards(5);
         qSort(card_ids.begin(), card_ids.end(), CompareBySuit);
@@ -190,6 +192,7 @@ bool GreatYeyanCard::targetFilter(const QList<const Player *> &targets, const Pl
 
 void GreatYeyanCard::use(Room *room, ServerPlayer *shenzhouyu, const QList<ServerPlayer *> &targets) const{
     room->broadcastInvoke("animate", "lightbox:$greatyeyan");
+    room->setEmotion(shenzhouyu, "yeyan");
 
     shenzhouyu->loseMark("@flame");
     room->throwCard(this);
@@ -208,6 +211,7 @@ bool MediumYeyanCard::targetFilter(const QList<const Player *> &targets, const P
 
 void MediumYeyanCard::use(Room *room, ServerPlayer *shenzhouyu, const QList<ServerPlayer *> &targets) const{
     room->broadcastInvoke("animate", "lightbox:$mediumyeyan");
+    room->setEmotion(shenzhouyu, "yeyan");
 
     shenzhouyu->loseMark("@flame");
     room->throwCard(this);
@@ -232,6 +236,7 @@ bool SmallYeyanCard::targetFilter(const QList<const Player *> &targets, const Pl
 
 void SmallYeyanCard::use(Room *room, ServerPlayer *shenzhouyu, const QList<ServerPlayer *> &targets) const{
     room->broadcastInvoke("animate", "lightbox:$smallyeyan");
+    room->setEmotion(shenzhouyu, "yeyan");
     shenzhouyu->loseMark("@flame");
 
     Card::use(room, shenzhouyu, targets);
@@ -318,6 +323,7 @@ public:
 
     void perform(ServerPlayer *shenzhouyu) const{
         Room *room = shenzhouyu->getRoom();
+        room->setEmotion(shenzhouyu, "qinyin");
         QString result = room->askForChoice(shenzhouyu, objectName(), "up+down");
         QList<ServerPlayer *> all_players = room->getAllPlayers();
         if(result == "up"){
@@ -373,6 +379,7 @@ public:
         for(i=0; i<x; i++){
             if(shencc->askForSkillInvoke(objectName())){
                 room->playSkillEffect(objectName());
+                room->setEmotion(shencc, "guixin");
 
                 QList<ServerPlayer *> players = room->getOtherPlayers(shencc);
                 if(players.length() >=5)
@@ -402,7 +409,7 @@ public:
     }
 
     virtual int getCorrect(const Player *from, const Player *to) const{
-        if(to->hasSkill(objectName()))
+        if(to->hasSkill(objectName()) && !to->getMark("@duanchang") > 0)
             return +1;
         else
             return 0;
@@ -427,6 +434,7 @@ public:
 
         player->gainMark("@wrath", damage.damage);
         player->getRoom()->playSkillEffect(objectName());
+        player->getRoom()->setEmotion(player, "kuangbao");
 
         return false;
     }
@@ -450,6 +458,7 @@ public:
         if(card->inherits("TrickCard") && !card->inherits("DelayedTrick")){
             Room *room = player->getRoom();
             room->playSkillEffect(objectName());
+            room->setEmotion(player, "wumou");
 
             int num = player->getMark("@wrath");
             if(num >= 1 && room->askForChoice(player, objectName(), "discard+losehp") == "discard"){
@@ -484,6 +493,7 @@ ShenfenCard::ShenfenCard(){
 
 void ShenfenCard::use(Room *room, ServerPlayer *shenlubu, const QList<ServerPlayer *> &) const{
     shenlubu->loseMark("@wrath", 6);
+    room->setEmotion(shenlubu, "shenfen");
 
     QList<ServerPlayer *> players = room->getOtherPlayers(shenlubu);
     foreach(ServerPlayer *player, players){
@@ -519,6 +529,7 @@ bool WuqianCard::targetFilter(const QList<const Player *> &targets, const Player
 
 void WuqianCard::onEffect(const CardEffectStruct &effect) const{
     Room *room = effect.to->getRoom();
+    room->setEmotion(effect.from, "wuqian");
 
     effect.from->loseMark("@wrath", 2);
     room->acquireSkill(effect.from, "wushuang", false);
@@ -667,6 +678,9 @@ public:
     }
 
     virtual bool onPhaseChange(ServerPlayer *shenzhuge) const{
+        if(shenzhuge->getPhase() == Player::Start){
+            shenzhuge->getRoom()->playSkillEffect("qixing");
+        }
         if(shenzhuge->getPhase() == Player::Draw){
             Exchange(shenzhuge);
         }
@@ -899,6 +913,7 @@ public:
                 CardStar card = data.value<CardStar>();
                 int n = card->subcardsLength();
                 if(n > 0)
+                    player->getRoom()->setEmotion(player, "renjie");
                     player->gainMark("@bear", n);
             }
         }else if(event == DamageDone){
@@ -956,6 +971,7 @@ public:
 
     virtual bool onPhaseChange(ServerPlayer *shensimayi) const{
         Room *room = shensimayi->getRoom();
+        room->setEmotion(shensimayi, "baiyin");
 
         LogMessage log;
         log.type = "#BaiyinWake";
@@ -1109,6 +1125,8 @@ public:
         if(!shensimayi->askForSkillInvoke("lianpo"))
             return false;
 
+        room->setEmotion(player, "lianpo");
+
         LogMessage log;
         log.type = "#LianpoCanInvoke";
         log.from = shensimayi;
@@ -1128,6 +1146,7 @@ public:
     }
 
     virtual int getDrawNum(ServerPlayer *player, int n) const{
+        player->getRoom()->setEmotion(player, "juejing");
         return n + player->getLostHp();
     }
 };

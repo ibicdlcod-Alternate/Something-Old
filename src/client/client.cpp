@@ -223,6 +223,12 @@ void Client::processReply(char *reply){
             buffer_t property, value;
             sscanf(reply, ".%s %s", property, value);
             Self->setProperty(property, value);
+            // ".objectName sgs1"
+            // 20111220
+            if(QString(property)=="objectName")
+            {
+                Config.setValue("LastObjname", value);
+            }
         }
     }else if(reply[0] == other_prefix){
         // others
@@ -1041,7 +1047,7 @@ void Client::killPlayer(const QString &player_name){
 
     player->loseAllSkills();
 
-    if(!Self->hasFlag("marshalling")){
+    if(!Self->hasFlag("marshalling") && !Self->hasSkill("baojie")){
         QString general_name = player->getGeneralName();
         QString last_word = Sanguosha->translate(QString("~%1").arg(general_name));
 
@@ -1778,4 +1784,46 @@ void Client::selectOrder(){
 void Client::updateStateItem(const QString &state_str)
 {
     emit role_state_changed(state_str);
+}
+
+
+// 20111218 by highlandz -->
+void Client::createroom(){
+    if(replayer)
+        replayer->start();
+    else{
+        QString base64 = Config.UserName.toUtf8().toBase64();
+        QString command = "createRoom";
+        QString signup_str = QString("%1 %2:%3").arg(command).arg(base64).arg(Config.UserAvatar);
+        signup_str.append(":" + Sanguosha->getVersion());
+        request(signup_str);
+    }
+}
+
+void Client::joinroom(int roomid){
+    if(replayer)
+        replayer->start();
+    else{
+        QString base64 = Config.UserName.toUtf8().toBase64();
+        QString command = "joinRoom";
+        QString signup_str = QString("%1 %2:%3").arg(command).arg(base64).arg(Config.UserAvatar);
+        signup_str.append(":" + QString::number(roomid));
+        signup_str.append(":" + Sanguosha->getVersion());
+        request(signup_str);
+    }
+}
+
+// 20111220
+void Client::rejoinroom(int roomid){
+    if(replayer)
+        replayer->start();
+    else{
+        QString base64 = Config.UserName.toUtf8().toBase64();
+        QString command = "reJoinRoom";
+        QString signup_str = QString("%1 %2:%3").arg(command).arg(base64).arg(Config.UserAvatar);
+        signup_str.append(":" + QString::number(roomid));
+        signup_str.append(":" + Sanguosha->getVersion());
+        signup_str.append(":" + Config.LastObjname);
+        request(signup_str);
+    }
 }

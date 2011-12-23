@@ -36,6 +36,7 @@ bool QiaobianCard::targetFilter(const QList<const Player *> &targets, const Play
 
 void QiaobianCard::use(Room *room, ServerPlayer *zhanghe, const QList<ServerPlayer *> &targets) const{
     room->throwCard(this);
+    room->setEmotion(zhanghe, "qiaobian");
 
     if(zhanghe->getPhase() == Player::Draw){
         foreach(ServerPlayer *target, targets){
@@ -158,6 +159,7 @@ public:
         ServerPlayer *caiwenji = room->findPlayerBySkillName(objectName());
         if(caiwenji && !caiwenji->isNude() && caiwenji->askForSkillInvoke(objectName(), data)){
             room->askForDiscard(caiwenji, "beige", 1, false, true);
+            room->setEmotion(caiwenji, "beige");
 
             JudgeStruct judge;
             judge.pattern = QRegExp("(.*):(.*):(.*)");
@@ -169,7 +171,6 @@ public:
 
             switch(judge.card->getSuit()){
             case Card::Heart:{
-                    room->playSkillEffect(objectName(), 4);
                     RecoverStruct recover;
                     recover.who = caiwenji;
                     room->recover(player, recover);
@@ -178,13 +179,12 @@ public:
                 }
 
             case Card::Diamond:{
-                    room->playSkillEffect(objectName(), 3);
                     player->drawCards(2);
+
                     break;
                 }
 
             case Card::Club:{
-                    room->playSkillEffect(objectName(), 1);
                     if(damage.from && damage.from->isAlive()){
                         int to_discard = qMin(2, damage.from->getCardCount(true));
                         if(to_discard != 0)
@@ -195,7 +195,6 @@ public:
                 }
 
             case Card::Spade:{
-                    room->playSkillEffect(objectName(), 2);
                     if(damage.from && damage.from->isAlive())
                         damage.from->turnOver();
 
@@ -226,32 +225,24 @@ public:
     virtual bool trigger(TriggerEvent , ServerPlayer *player, QVariant &data) const{
         DamageStar damage = data.value<DamageStar>();
 
-        if(damage && damage->from){
+        if(damage && damage->from && ServerInfo.GameMode != "04_1v3"){
             Room *room = player->getRoom();
 
             LogMessage log;
             log.type = "#DuanchangLoseSkills";
             log.from = player;
             log.to << damage->from;
-            log.arg = objectName();
             room->sendLog(log);
-            room->playSkillEffect(objectName());
 
             QList<const Skill *> skills = damage->from->getVisibleSkillList();
             foreach(const Skill *skill, skills){
                 if(skill->parent())
                     room->detachSkillFromPlayer(damage->from, skill->objectName());
+                    room->getThread()->removeAllSkill(skill->objectName());
+                    room->setPlayerFlag(damage->from, "baiban");
+                    room->resetAI(damage->from);
             }
-
-            QString kingdom = damage->from->getKingdom();
-
-            QString to_transfigure = damage->from->getGeneral()->isMale() ? "sujiang" : "sujiangf";
-            room->setPlayerProperty(damage->from, "general", to_transfigure);
-            if(damage->from->getGeneral2())
-                room->setPlayerProperty(damage->from, "general2", to_transfigure);
-            room->setPlayerProperty(damage->from, "kingdom", kingdom);
-
-            room->resetAI(damage->from);
+            damage->from->gainMark("@duanchang");
         }
 
         return false;
@@ -265,7 +256,7 @@ public:
     }
 
     virtual int getCorrect(const Player *from, const Player *) const{
-        if(from->hasSkill(objectName()))
+        if(from->hasSkill(objectName()) && !from->getMark("@duanchang") > 0)
             return -from->getPile("field").length();
         else
             return 0;
@@ -293,8 +284,9 @@ public:
                 return false;
             player->tag.remove("InvokeTuntian");
 
-            if(player->askForSkillInvoke("tuntian", data)){
+            if(!player->getMark("@duanchang") > 0 && player->askForSkillInvoke("tuntian", data)){
                 Room *room = player->getRoom();
+                room->setEmotion(player, "tuntian");
 
                 JudgeStruct judge;
                 judge.pattern = QRegExp("(.*):(heart):(.*)");
@@ -331,6 +323,7 @@ public:
 
     virtual bool onPhaseChange(ServerPlayer *dengai) const{
         Room *room = dengai->getRoom();
+        room->setEmotion(dengai, "zaoxian");
 
         room->setPlayerMark(dengai, "zaoxian", 1);
         room->loseMaxHp(dengai);
@@ -356,6 +349,9 @@ void JixiCard::onUse(Room *room, const CardUseStruct &card_use) const{
 
     QList<int> fields = dengai->getPile("field");
     if(fields.isEmpty())
+        return ;
+
+    if(dengai->getMark("@duanchang") > 0)
         return ;
 
     int card_id;
@@ -437,6 +433,7 @@ public:
 
         if(card->inherits("Duel") || (card->inherits("Slash") && card->isRed())){
             if(sunce->askForSkillInvoke(objectName(), data))
+                sunce->getRoom()->setEmotion(sunce, "jiang");
                 sunce->drawCards(1);
         }
 
@@ -459,6 +456,7 @@ public:
 
     virtual bool onPhaseChange(ServerPlayer *sunce) const{
         Room *room = sunce->getRoom();
+        room->setEmotion(sunce, "hunzi");
 
         LogMessage log;
         log.type = "#HunziWake";
@@ -486,6 +484,8 @@ bool ZhibaCard::targetFilter(const QList<const Player *> &targets, const Player 
 
 void ZhibaCard::use(Room *room, ServerPlayer *source, const QList<ServerPlayer *> &targets) const{
     ServerPlayer *sunce = targets.first();
+    room->setEmotion(sunce, "zhiba");
+
     if(sunce->getMark("hunzi") > 0 &&
        room->askForChoice(sunce, "zhiba_pindian", "accept+reject") == "reject")
     {
@@ -567,6 +567,7 @@ bool TiaoxinCard::targetFilter(const QList<const Player *> &targets, const Playe
 
 void TiaoxinCard::onEffect(const CardEffectStruct &effect) const{
     Room *room = effect.from->getRoom();
+    room->setEmotion(effect.from, "tiaoxin");
 
     if(effect.from->hasArmorEffect("eight_diagram") || effect.from->hasSkill("bazhen"))
         room->playSkillEffect("tiaoxin", 3);
@@ -616,6 +617,7 @@ public:
 
     virtual bool onPhaseChange(ServerPlayer *jiangwei) const{
         Room *room = jiangwei->getRoom();
+        room->setEmotion(jiangwei, "zhiji");
 
         LogMessage log;
         log.type = "#ZhijiWake";
@@ -658,6 +660,7 @@ bool ZhijianCard::targetFilter(const QList<const Player *> &targets, const Playe
 
 void ZhijianCard::onEffect(const CardEffectStruct &effect) const{
     ServerPlayer *erzhang = effect.from;
+    erzhang->getRoom()->setEmotion(erzhang, "zhijian");
     erzhang->getRoom()->moveCardTo(this, effect.to, Player::Equip);
     erzhang->drawCards(1);
 }
@@ -749,6 +752,7 @@ public:
 
         if(erzhang->askForSkillInvoke("guzheng", cards.length())){
             room->fillAG(cards, erzhang);
+            room->setEmotion(erzhang, "guzheng");
 
             int to_back = room->askForAG(erzhang, cards, false, objectName());
             player->obtainCard(Sanguosha->getCard(to_back));
@@ -787,6 +791,7 @@ public:
             Room *room = player->getRoom();
 
             room->playSkillEffect(objectName());
+            room->setEmotion(player, "xiangle");
 
             LogMessage log;
             log.type = "#Xiangle";
@@ -814,6 +819,8 @@ public:
     virtual bool onPhaseChange(ServerPlayer *liushan) const{
         switch(liushan->getPhase()){
         case Player::Play: {
+                if(liushan->isKongcheng())
+                    return false;
                 bool invoked = liushan->askForSkillInvoke(objectName());
                 if(invoked)
                     liushan->setFlags("fangquan");
@@ -843,7 +850,9 @@ public:
                     log.to << player;
                     room->sendLog(log);
 
-                    player->gainAnExtraTurn();
+                    room->setCurrent(player);
+                    room->getThread()->trigger(TurnStart, player);
+                    room->setCurrent(liushan);
                 }
 
                 break;
@@ -883,6 +892,7 @@ public:
 
         if(can_invoke){
             room->playSkillEffect(objectName());
+            room->setEmotion(liushan, "ruoyu");
 
             LogMessage log;
             log.type = "#RuoyuWake";
@@ -953,7 +963,7 @@ public:
 
         static QSet<QString> banned;
         if(banned.isEmpty()){
-            banned << "zuoci" << "zuocif" << "guzhielai" << "dengshizai" << "caochong";
+            banned << "zuoci" << "zuocif" << "guzhielai" << "dengshizai" << "caochong" << "zhoutai";
         }
 
         return (all - banned - huashen_set - room_set).toList();
@@ -1053,12 +1063,13 @@ public:
     }
 
     virtual bool triggerable(const ServerPlayer *target) const{
-        return PhaseChangeSkill::triggerable(target) && target->getPhase() == Player::Start;
+        return !target->getMark("@duanchang") > 0 && PhaseChangeSkill::triggerable(target) && target->getPhase() == Player::Start;
     }
 
     virtual bool onPhaseChange(ServerPlayer *zuoci) const{
         QString skill_name = Huashen::SelectSkill(zuoci, false);
         if(!skill_name.isEmpty())
+            zuoci->getRoom()->setEmotion(zuoci, "huashen");
             zuoci->getRoom()->acquireSkill(zuoci, skill_name);
 
         return false;
@@ -1076,7 +1087,7 @@ public:
     }
 
     virtual bool triggerable(const ServerPlayer *target) const{
-        return PhaseChangeSkill::triggerable(target) && target->getPhase() == Player::NotActive;
+        return !target->getMark("@duanchang") > 0 && PhaseChangeSkill::triggerable(target) && target->getPhase() == Player::NotActive;
     }
 
     virtual bool onPhaseChange(ServerPlayer *zuoci) const{
@@ -1098,7 +1109,29 @@ public:
             return;
 
         if(zuoci->getRoom()->askForSkillInvoke(zuoci, objectName()))
+            zuoci->getRoom()->setEmotion(zuoci, "xinsheng");
             Huashen::AcquireGenerals(zuoci, n);
+    }
+};
+
+class ZuociClear: public PhaseChangeSkill{
+public:
+    ZuociClear():PhaseChangeSkill("#zuoci-clear"){
+
+    }
+
+    virtual bool onPhaseChange(ServerPlayer *zuoci) const{
+        Room *room = zuoci->getRoom();
+        if(zuoci->getPhase() == Player::Start && !room->findPlayer("maliang")){
+            QList<ServerPlayer *> players = room->getOtherPlayers(zuoci);
+            foreach(ServerPlayer *player, players){
+                if(player->getMark("@zhongyan") > 0){
+                    player->loseMark("@zhongyan");
+                }
+            }
+        }
+
+        return false;
     }
 };
 
@@ -1123,6 +1156,7 @@ MountainPackage::MountainPackage()
     General *jiangwei = new General(this, "jiangwei", "shu");
     jiangwei->addSkill(new Tiaoxin);
     jiangwei->addSkill(new Zhiji);
+    jiangwei->addSkill(new SPConvertSkill("qiliner", "jiangwei", "sp_jiangwei"));
 
     related_skills.insertMulti("zhiji", "guanxing");
 
@@ -1150,12 +1184,14 @@ MountainPackage::MountainPackage()
     zuoci->addSkill(new HuashenBegin);
     zuoci->addSkill(new HuashenEnd);
     zuoci->addSkill(new Xinsheng);
+    zuoci->addSkill(new ZuociClear);
 
     General *zuocif = new General(this, "zuocif", "qun", 3, false, true);
     zuocif->addSkill("huashen");
     zuocif->addSkill("#huashen-begin");
     zuocif->addSkill("#huashen-end");
     zuocif->addSkill("xinsheng");
+    zuocif->addSkill("#zuoci-clear");
 
     related_skills.insertMulti("huashen", "#huashen-begin");
     related_skills.insertMulti("huashen", "#huashen-end");

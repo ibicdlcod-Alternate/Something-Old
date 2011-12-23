@@ -5,6 +5,7 @@
 #include <QListWidget>
 #include <QComboBox>
 #include <QButtonGroup>
+#include <QTableWidgetItem>
 
 class UdpDetector;
 
@@ -23,11 +24,18 @@ private:
     Ui::ConnectionDialog *ui;
 
 private slots:
+    void on_nodeListTable_itemSelectionChanged();
+    void on_nodeListTable_itemDoubleClicked(QTableWidgetItem* item);
+    void on_getNodeListButton_clicked();
     void on_detectLANButton_clicked();
     void on_clearHistoryButton_clicked();
     void on_avatarList_itemDoubleClicked(QListWidgetItem* item);
     void on_changeAvatarButton_clicked();
     void on_connectButton_clicked();
+    void updateNodeListTable(QString node); // 20111218
+signals:
+    void qnodelist(QString ,int);
+    void qnodeinfo(QString ,int);
 };
 
 class UdpDetectorDialog : public QDialog{

@@ -145,16 +145,6 @@ void Room::output(const QString &message){
     emit room_message(message);
 }
 
-void Room::outputEventStack(){
-    QString msg;
-
-    foreach(EventTriplet triplet, *thread->getEventStack()){
-        msg.prepend(triplet.toString());
-    }
-
-    output(msg);
-}
-
 void Room::enterDying(ServerPlayer *player, DamageStruct *reason){
     DyingStruct dying;
     dying.who = player;
@@ -192,32 +182,33 @@ void Room::revivePlayer(ServerPlayer *player){
     }
 
     broadcastInvoke("revivePlayer", player->objectName());
-    updateStateItem();
 }
 
-static bool CompareByRole(ServerPlayer *player1, ServerPlayer *player2){
-    int role1 = player1->getRoleEnum();
-    int role2 = player2->getRoleEnum();
-
-    if(role1 != role2)
-        return role1 < role2;
-    else
-        return player1->isAlive();
-}
-
-void Room::updateStateItem(){
-    QList<ServerPlayer *> players = this->players;
-    qSort(players.begin(), players.end(), CompareByRole);
-    QString roles;
-    foreach(ServerPlayer *p, players){
-        QChar c = "ZCFN"[p->getRoleEnum()];
-        if(p->isDead())
-            c = c.toLower();
-
-        roles.append(c);
+QString Room::getRoleStateString()
+{
+    int lords=0,rebels=0,loyals=0,renes=0;
+    foreach(ServerPlayer * player,getAlivePlayers())
+    {
+        switch(player->getRoleEnum())
+        {
+        case Player::Lord:
+            lords++;break;
+            case Player::Renegade:
+            renes++;break;
+            case Player::Rebel:
+            rebels++;break;
+            case Player::Loyalist:
+            loyals++;break;
+        default:
+            break;
+        }
     }
-
-    broadcastInvoke("updateStateItem", roles);
+    QString op="";
+    for(int i=0;i<lords;i++)op+="Z";
+    for(int i=0;i<loyals;i++)op+="C";
+    for(int i=0;i<rebels;i++)op+="F";
+    for(int i=0;i<renes;i++)op+="N";
+    return op;
 }
 
 void Room::killPlayer(ServerPlayer *victim, DamageStruct *reason){
@@ -248,7 +239,7 @@ void Room::killPlayer(ServerPlayer *victim, DamageStruct *reason){
     log.arg = victim->getRole();
     log.from = killer;
 
-    updateStateItem();
+    broadcastInvoke("updateStateItem", getRoleStateString());
 
     if(killer){
         if(killer == victim)
@@ -378,13 +369,14 @@ void Room::gameOver(const QString &winner){
 void Room::slashEffect(const SlashEffectStruct &effect){
     effect.from->addMark("SlashCount");
 
-    if(effect.from->getMark("SlashCount") > 1 && effect.from->hasSkill("paoxiao"))
-        playSkillEffect("paoxiao");
+    if(effect.from->getMark("SlashCount") > 1 && effect.from->hasSkill("paoxiao")){
+        setEmotion(effect.from, "paoxiao");
+        playSkillEffect("paoxiao");}
+
+    if(effect.from->getMark("SlashCount") > 1 && !effect.from->hasSkill("paoxiao") && effect.from->hasWeapon("crossbow")){
+        setEmotion(effect.from, "crossbow");}
 
     QVariant data = QVariant::fromValue(effect);
-
-    setEmotion(effect.from, "killer");
-    setEmotion(effect.to, "victim");
 
     bool broken = thread->trigger(SlashEffect, effect.from, data);
     if(!broken)
@@ -400,7 +392,7 @@ void Room::slashResult(const SlashEffectStruct &effect, const Card *jink){
     if(jink == NULL)
         thread->trigger(SlashHit, effect.from, data);
     else{
-        setEmotion(effect.to, "jink");
+        broadcastInvoke("animate", QString("jink:%1").arg(effect.to->objectName()));
         thread->trigger(SlashMissed, effect.from, data);
     }
 }
@@ -465,8 +457,14 @@ bool Room::askForSkillInvoke(ServerPlayer *player, const QString &skill_name, co
         invoked =  result == "yes";
     }
 
-    if(invoked)
-        broadcastInvoke("skillInvoked", QString("%1:%2").arg(player->objectName()).arg(skill_name));
+    if(invoked){
+        LogMessage log;
+        log.type = "#InvokeSkill";
+        log.from = player;
+        log.arg = skill_name;
+        player->getRoom()->sendLog(log);
+        setEmotion(player, skill_name);
+    }
 
     QVariant decisionData = QVariant::fromValue("skillInvoke:"+skill_name+":"+(invoked ? "yes" : "no"));
     thread->trigger(ChoiceMade, player, decisionData);
@@ -1215,11 +1213,17 @@ void Room::reportDisconnection(){
 
             if(player->getState() != "robot"){
                 QString screen_name = Config.ContestMode ? tr("Contestant") : player->screenName();
-                QString leaveStr = tr("<font color=#000000>Player <b>%1</b> left the game</font>").arg(screen_name);
+                QString leaveStr = tr("<font color=#FFFFFF>Player <b>%1</b> left the game</font>").arg(screen_name);
                 speakCommand(player, leaveStr.toUtf8().toBase64());
             }
 
             broadcastInvoke("removePlayer", player->objectName());
+            // 20111220
+            if(players.length()==0)
+            {
+                game_finished = true;
+                emit(room_finished());
+            }
         }
     }else{
         if(!game_started){
@@ -1245,6 +1249,10 @@ void Room::reportDisconnection(){
 
         if(!someone_is_online){
             game_finished = true;
+            // 20111220 by highlandz add process of clear finished room
+            emit(room_finished());
+//            sem->acquire();
+//            thread->end();
             return;
         }
 
@@ -2986,7 +2994,7 @@ bool Room::askForYiji(ServerPlayer *guojia, QList<int> &cards){
             moveCardTo(dummy_card, who, Player::Hand, false);
             delete dummy_card;
 
-            setEmotion(who, "draw-card");
+            broadcastInvoke("animate", QString("draw-card:%1").arg(who->objectName()));
 
             return true;
         }

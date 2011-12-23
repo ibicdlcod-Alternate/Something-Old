@@ -8,6 +8,7 @@
 #include "challengemode.h"
 #include "contestdb.h"
 #include "choosegeneraldialog.h"
+#include "time.h"
 
 #include <QInputDialog>
 #include <QMessageBox>
@@ -22,6 +23,7 @@
 #include <QApplication>
 #include <QHttp>
 #include <QAction>
+#include <QTimer>
 
 static QLayout *HLay(QWidget *left, QWidget *right){
     QHBoxLayout *layout = new QHBoxLayout;
@@ -178,14 +180,14 @@ QWidget *ServerDialog::createAdvancedTab(){
 
     announce_ip_checkbox = new QCheckBox(tr("Annouce my IP in WAN"));
     announce_ip_checkbox->setChecked(Config.AnnounceIP);
-    announce_ip_checkbox->setEnabled(false); // not support now
+    announce_ip_checkbox->setEnabled(true); // 20111218 by highlandz for server node list
 
     address_edit = new QLineEdit;
     address_edit->setText(Config.Address);
 
-    #if QT_VERSION >= 0x040700
+#if QT_VERSION >= 0x040700
     address_edit->setPlaceholderText(tr("Public IP or domain"));
-    #endif
+#endif
 
     QPushButton *detect_button = new QPushButton(tr("Detect my WAN IP"));
     connect(detect_button, SIGNAL(clicked()), this, SLOT(onDetectButtonClicked()));
@@ -196,6 +198,14 @@ QWidget *ServerDialog::createAdvancedTab(){
     port_edit = new QLineEdit;
     port_edit->setText(QString::number(Config.ServerPort));
     port_edit->setValidator(new QIntValidator(1, 9999, port_edit));
+
+    // 20111218 by highlandz add node config
+    node_address_edit = new QLineEdit;
+    node_address_edit->setText("highlandz.3322.org");
+
+    node_port_edit = new QLineEdit;
+    node_port_edit->setText(QString::number(9527));
+    node_port_edit->setValidator(new QIntValidator(1, 9999, node_port_edit));
 
     layout->addWidget(contest_mode_checkbox);
     layout->addWidget(forbid_same_ip_checkbox);
@@ -210,6 +220,8 @@ QWidget *ServerDialog::createAdvancedTab(){
     layout->addLayout(HLay(new QLabel(tr("Address")), address_edit));
     layout->addWidget(detect_button);
     layout->addLayout(HLay(new QLabel(tr("Port")), port_edit));
+    layout->addLayout(HLay(new QLabel(tr("NodeAddress")), node_address_edit)); //20111218
+    layout->addLayout(HLay(new QLabel(tr("NodePort")), node_port_edit)); //20111218
     layout->addStretch();
 
     QWidget *widget = new QWidget;
@@ -248,6 +260,10 @@ QWidget *ServerDialog::createAITab(){
 
 void ServerDialog::ensureEnableAI(){
     ai_enable_checkbox->setChecked(true);
+}
+
+void ServerDialog::ensureDisableAnnounceIP(){
+    announce_ip_checkbox->setChecked(false);
 }
 
 KOFBanlistDialog::KOFBanlistDialog(QDialog *parent)
@@ -723,6 +739,10 @@ bool ServerDialog::config(){
     Config.AIDelay = ai_delay_spinbox->value();
     Config.ServerPort = port_edit->text().toInt();
 
+    // 20111220 by highlandz
+    Config.NodeAddress=node_address_edit->text();
+    Config.NodePort=node_port_edit->text().toUShort();
+
     // game mode
     QString objname = mode_group->checkedButton()->objectName();
     if(objname == "scenario")
@@ -752,6 +772,9 @@ bool ServerDialog::config(){
     Config.setValue("ServerPort", Config.ServerPort);
     Config.setValue("AnnounceIP", Config.AnnounceIP);
     Config.setValue("Address", Config.Address);
+
+    Config.setValue("NodeAddress", Config.NodeAddress); //20111220
+    Config.setValue("NodePort", Config.NodePort); //20111220
 
     Config.beginGroup("3v3");
     Config.setValue("UsingExtension", ! standard_3v3_radiobutton->isChecked());
@@ -792,6 +815,33 @@ Server::Server(QObject *parent)
     connect(qApp, SIGNAL(aboutToQuit()), this, SLOT(deleteLater()));
 
     current = NULL;
+
+    // 20111218
+    if(!Config.Address.isEmpty() && Config.ServerPort){
+        nodeList[Config.Address.toLower()+":"+QString::number(Config.ServerPort)+":"+Config.GameMode]=0;
+    }
+
+    QTimer *timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(timerTrigger()));
+    timer->start(60*10*1000); // 10 mins
+
+    ssclient=new NativeClientSocket;
+    ssclient->setParent(this);
+    connect(ssclient, SIGNAL(message_got(char*)), this, SLOT(process_SS_Reply(char*)));
+    connect(ssclient, SIGNAL(error_message(QString)), this, SLOT(process_SS_error_message(QString)));
+    if(Config.AnnounceIP && !Config.Address.isEmpty() && !QString::number(Config.ServerPort).isEmpty()) //20111220
+    {
+        foreach( QString tmp, Config.HistoryNodeList ){
+            QStringList tmplist = tmp.split(":");
+            ssclient->connectToNode(tmplist[0],tmplist[1].toInt());
+            ssclient->send("nodealive "+Config.Address.toLower()+":"+QString::number(Config.ServerPort)+":"+Config.GameMode);
+        }
+        Config.HistoryNodeList.clear();
+        Config.remove("HistoryNodeList");
+
+        ssclient->connectToNode(Config.NodeAddress,Config.NodePort);
+        ssclient->send("iamnode "+Config.Address.toLower()+":"+QString::number(Config.ServerPort)+":"+Config.GameMode);
+    }
 }
 
 void Server::broadcast(const QString &msg){
@@ -810,7 +860,12 @@ void Server::daemonize(){
 }
 
 Room *Server::createNewRoom(){
+
+    // 20111218 add RoomID
+    static int RoomID = 0;
+    RoomID ++;
     Room *new_room = new Room(this, Config.GameMode);
+    new_room->setTag("RoomID",RoomID); // set room id
     QString error_msg = new_room->createLuaState();
 
     if(!error_msg.isEmpty()){
@@ -823,6 +878,7 @@ Room *Server::createNewRoom(){
 
     connect(current, SIGNAL(room_message(QString)), this, SIGNAL(server_message(QString)));
     connect(current, SIGNAL(game_over(QString)), this, SLOT(gameOver()));
+    connect(current, SIGNAL(room_finished()), this, SLOT(roomFinished())); // 20111220
 
     return current;
 }
@@ -850,56 +906,362 @@ static inline QString ConvertFromBase64(const QString &base64){
     QByteArray data = QByteArray::fromBase64(base64.toAscii());
     return QString::fromUtf8(data);
 }
-
 void Server::processRequest(char *request){
+    // emit server_message(request);
     ClientSocket *socket = qobject_cast<ClientSocket *>(sender());
     socket->disconnect(this, SLOT(processRequest(char*)));
+    // 20111218 by highlandz
+    QString cmd(request);
+    cmd=cmd.trimmed();
+    if(cmd.indexOf("signup")==-1)
+    {
+        QString msg="";
+        // cmd of HallDialog
+        if(cmd.indexOf("iamnode")!=-1) // new node
+        {
+            QStringList tmplist = cmd.split(" ");
+            if (!nodeList.contains(tmplist[1]))
+            {
+                nodeList.insert(tmplist[1], clock());
+                //emit server_message("Receive and iamnode 0: "+tmplist[1]);
+                Config.HistoryNodeList << tmplist[1];
+                Config.HistoryNodeList.removeDuplicates();
+                Config.HistoryNodeList.sort();
+                Config.setValue("HistoryNodeList", Config.HistoryNodeList);
+            }
+            else if(nodeList[tmplist[1]]!=0)
+            {
+                nodeList.insert(tmplist[1], clock());
+                Config.HistoryNodeList << tmplist[1];
+                Config.HistoryNodeList.removeDuplicates();
+                Config.HistoryNodeList.sort();
+                Config.setValue("HistoryNodeList", Config.HistoryNodeList);
+                //emit server_message("Receive and iamnode 1: "+tmplist[1]);
+            }
+            else
+            {;}
 
-    QRegExp rx("(signupr?) (.+):(.+)(:.+)?\n");
-    if(!rx.exactMatch(request)){
-        emit server_message(tr("Invalid signup string: %1").arg(request));
-        socket->send("warn INVALID_FORMAT");
-        socket->disconnectFromHost();
-        return;
-    }
+            QHashIterator <QString, long> i(nodeList); // send my nodelist to new node
+            while (i.hasNext()) {
+                i.next();
 
-    QStringList texts = rx.capturedTexts();
-    QString command = texts.at(1);
-    QString screen_name = ConvertFromBase64(texts.at(2));
-    QString avatar = texts.at(3);
+                if(clock()-i.value()>60*8*1000*60 && i.value()!=0)
+                {
+                    nodeList.remove(i.key());
+                    //emit server_message("Remove node: "+i.key());
+                }
+                else
+                {
+                    socket->send("nodelist "+i.key());
+                    //emit server_message("Send nodelist: "+i.key());
+                }
+            }
+        }
+        else if(cmd.indexOf("nodealive")!=-1) // received announcement of I am still online
+        {
+            QStringList tmplist = cmd.split(" ");
+            if (!nodeList.contains(tmplist[1])) // a new one
+            {
+                nodeList.insert(tmplist[1], clock());
+                Config.HistoryNodeList << tmplist[1];
+                Config.HistoryNodeList.removeDuplicates();
+                Config.HistoryNodeList.sort();
+                Config.setValue("HistoryNodeList", Config.HistoryNodeList);
+                //emit server_message("Receive nodealive 0: "+tmplist[1]);
+            }
+            else if(nodeList[tmplist[1]]!=0) // update last time
+            {
+                nodeList.insert(tmplist[1], clock());
+                Config.HistoryNodeList << tmplist[1];
+                Config.HistoryNodeList.removeDuplicates();
+                Config.HistoryNodeList.sort();
+                Config.setValue("HistoryNodeList", Config.HistoryNodeList);
+                //emit server_message("Receive nodealive 1: "+tmplist[1]);
+            }
+            else
+            {;}
+        }
+        else if(cmd.indexOf("Qnodelist .")!=-1) // for nodelist request
+        {
+            QHashIterator <QString, long> i(nodeList);
+            while (i.hasNext()) {
+                i.next();
 
-    if(Config.ContestMode){
-        QString password = texts.value(4);
-        if(password.isEmpty()){
-            socket->send("warn REQUIRE_PASSWORD");
-            socket->disconnectFromHost();
+                if(clock()-i.value()>60*8*1000*60 && i.value()!=0)
+                {
+                    nodeList.remove(i.key());
+                    //emit server_message("Qnodelist Remove node: "+i.key());
+                }
+                else
+                {
+                    socket->send("nodelist "+i.key());
+                    //emit server_message("Qnodelist: "+i.key());
+                }
+            }
+        }
+        else if(cmd.indexOf("Qnodeinfo")!=-1)
+        {
+            QStringList tmp=cmd.split(" ");
+            if(tmp.count()==2)
+            {
+                // 20111218 count toggle ready players
+                int robotcount=0;
+                int playercount=0;
+                int roomcount=0; // 20111220
+                foreach(Room *room, rooms){
+                    // playercount+=room->players.length();
+                    foreach(ServerPlayer *player, room->players){
+                        if(player->getState() != "robot")
+                            playercount ++;
+                        else if(player->getState() == "robot")
+                            robotcount++;
+                    }
+                    // 20111220
+                    QString roomname=room->getTag("RoomOwnerScreenName").toString().trimmed();
+                    if(!roomname.isEmpty())
+                    {
+                        if((playercount+robotcount==0 || playercount+robotcount>8))
+                        {
+                            rooms.remove(room);
+                        }
+                        else{
+                            roomcount++;
+                        }
+
+                    }
+                    //emit server_message("Qnodeinfo: "+reply);
+                }
+                //                QString reply=Config.Address.toLower()+":"+QString::number(Config.ServerPort)+":"+Config.GameMode+":"
+                //                              +QString::number(Config.Enable2ndGeneral?1:0)+":"+QString::number(this->rooms.count()-1)
+                //                              +":"+QString::number(playercount) +":"+tmp[1] ;
+                QString base64=Config.ServerName.toUtf8().toBase64();
+                QString reply=Config.Address.toLower()+":"+QString::number(Config.ServerPort)+":"+base64+":"
+                              +Sanguosha->getVersion()+":"+Config.GameMode+":"+QString::number(Config.Enable2ndGeneral?1:0)+":"
+                              +QString::number(roomcount)+":"+QString::number(playercount) +":"+tmp[1] ;
+                socket->send("nodeinfo "+reply);
+            }
+        }
+        else if(cmd.indexOf("refreshRooms")!=-1) // 20111220 for reconnect
+        {
+            // emit server_message("refreshRooms");
+            if(rooms.count()<=1){socket->send("room 0"); return;}
+            else if(cmd=="refreshRooms .")
+            {
+                foreach(Room *room, rooms)
+                {
+                    QString roomstatus="";
+                    if(room->game_started){ roomstatus="Playing"; } else {roomstatus="Waiting";}
+                    if(room->game_finished){ roomstatus="Finished"; }
+                    int robotcount=0;
+                    int playercount=0;
+                    foreach(ServerPlayer *player, room->players){
+                        if(player->getState() != "robot")
+                            playercount ++;
+                        else if(player->getState() == "robot")
+                            robotcount++;
+                    }
+                    QString base64=room->getTag("RoomOwnerScreenName").toString().toUtf8().toBase64();
+                    // 20111220
+                    if(!base64.trimmed().isEmpty())
+                    {
+                        if((playercount+robotcount==0 || playercount+robotcount>8))
+                        {
+                            rooms.remove(room);
+                        }
+                        else
+                        {
+                            socket->send("room " + room->getTag("RoomID").toString() +":"+ base64 +":"+ QString::number(playercount) + ":" + roomstatus );
+                            // socket->send("room " + "RoomID" + ":" + "RoomName" + ":" + "Players" + ":" + "Status");
+                            // socket->send("room RoomID"+QString::number(i)+":RoomName"+QString::number(i)+":Players"+QString::number(i)+":Status"+QString::number(i));
+                        }
+                    }
+                }
+            }
+            else{
+                QRegExp rx("(refreshRooms?) (.+):(.+)?\n");
+                if(!rx.exactMatch(request)){
+                    emit server_message(tr("Invalid refreshRooms string: %1").arg(request));
+                    socket->send("warn INVALID_FORMAT");
+                    socket->disconnectFromHost();
+                    return;
+                }
+                QStringList texts = rx.capturedTexts();
+                QString command = texts.at(1);
+                QString screen_name = ConvertFromBase64(texts.at(2));
+                QString lastobjname = texts.at(3);
+                QString reply;
+
+                QHashIterator <QString, QString> i(name2objname);
+                while (i.hasNext()) {
+                    i.next();
+                    if(i.key()==screen_name && i.value()==lastobjname)
+                    {
+                        ServerPlayer *player = players.value(lastobjname);
+                        if(player && player->getState() == "offline"){
+                            reply=player->getRoom()->getTag("RoomID").toString();
+                            command ="foundRoomID "+reply;
+                            socket->send(command);
+                            return;
+                        }
+                    }
+                }
+                // 20111220 can't find room
+                command="refreshRooms .";
+                processRequest(command.toLatin1().data());
+                return;
+            }
             return;
         }
+        else if(cmd.indexOf("reJoinRoom")!=-1) // 20111220 rejoinroom
+        {
+            QRegExp rx("(reJoinRoom?) (.+):(.+):(.+):(.+):(.+)?\n");
+            if(!rx.exactMatch(request)){
+                emit server_message(tr("Invalid reJoinRoom string: %1").arg(request));
+                socket->send("warn INVALID_FORMAT");
+                socket->disconnectFromHost();
+                return;
+            }
 
-        password.remove(QChar(':'));
-        ContestDB *db = ContestDB::GetInstance();
-        if(!db->checkPassword(screen_name, password)){
-            socket->send("warn WRONG_PASSWORD");
-            socket->disconnectFromHost();
-            return;
-        }
-    }
+            QStringList texts = rx.capturedTexts();
+            QString command = texts.at(1);
+            QString screen_name = ConvertFromBase64(texts.at(2));
+            QString avatar = texts.at(3);
+            QString roomid = texts.at(4);
+            QString version = texts.at(5);
+            QString sgsname = texts.at(6);
 
-    if(command == "signupr"){
-        foreach(QString objname, name2objname.values(screen_name)){
-            ServerPlayer *player = players.value(objname);
+            if(version!=Sanguosha->getVersion()){
+                socket->send("warn INVALID_VERSION");
+                socket->disconnectFromHost();
+                return;
+            }
+
+            ServerPlayer *player = players.value(sgsname);
             if(player && player->getState() == "offline"){
                 player->getRoom()->reconnect(player, socket);
+            }
+        }
+        else if(cmd.indexOf("joinRoom")!=-1)
+        {
+            QRegExp rx("(joinRoom?) (.+):(.+):(.+):(.+)?\n");
+            if(!rx.exactMatch(request)){
+                emit server_message(tr("Invalid joinRoom string: %1").arg(request));
+                socket->send("warn INVALID_FORMAT");
+                socket->disconnectFromHost();
+                return;
+            }
+
+            QStringList texts = rx.capturedTexts();
+            QString command = texts.at(1);
+            QString screen_name = ConvertFromBase64(texts.at(2));
+            QString avatar = texts.at(3);
+            QString roomid = texts.at(4);
+            QString version = texts.at(5);
+
+            if(version!=Sanguosha->getVersion()){
+                socket->send("warn INVALID_VERSION");
+                socket->disconnectFromHost();
+                return;
+            }
+
+            foreach(Room *room, rooms){
+                QString rid=room->getTag("RoomID").toString();
+                if(rid==roomid && !room->game_started )
+                {
+                    ServerPlayer *player = room->addSocket(socket);
+                    room->signup(player, screen_name, avatar, false);
+                }
+            }
+        }
+        else if(cmd.indexOf("createRoom")!=-1)
+        {
+            QRegExp rx("(createRoom?) (.+):(.+):(.+)?\n");
+            if(!rx.exactMatch(request)){
+                emit server_message(tr("Invalid createRoom string: %1").arg(request));
+                socket->send("warn INVALID_FORMAT");
+                socket->disconnectFromHost();
+                return;
+            }
+
+            QStringList texts = rx.capturedTexts();
+            QString command = texts.at(1);
+            QString screen_name = ConvertFromBase64(texts.at(2));
+            QString avatar = texts.at(3);
+            QString version = texts.at(4);
+
+            if(version!=Sanguosha->getVersion()){
+                socket->send("warn INVALID_VERSION");
+                socket->disconnectFromHost();
+                return;
+            }
+
+            Room* newRoom =  createNewRoom();
+            ServerPlayer *player = newRoom->addSocket(socket);
+            newRoom->setTag("RoomOwnerScreenName",screen_name);
+            newRoom->signup(player, screen_name, avatar, false);
+            // socket->send(".roomEntered " + newRoom->getTag("RoomID").toString()); // 告知客户端的ClientPlayer进入的房间号;
+            newRoom->broadcastProperty(player, "owner");
+            return;
+        }
+        else
+        {
+            // unknow msg;
+            // socket->send("warn UNKNOW_" + QString(request));
+        }
+    }
+    else // 原signup的过程
+    {
+        QRegExp rx("(signupr?) (.+):(.+)(:.+)?\n");
+        if(!rx.exactMatch(request)){
+            emit server_message(tr("Invalid signup string: %1").arg(request));
+            socket->send("warn INVALID_FORMAT");
+            socket->disconnectFromHost();
+            return;
+        }
+
+        QStringList texts = rx.capturedTexts();
+        QString command = texts.at(1);
+        QString screen_name = ConvertFromBase64(texts.at(2));
+        QString avatar = texts.at(3);
+
+        if(Config.ContestMode){
+            QString password = texts.value(4);
+            if(password.isEmpty()){
+                socket->send("warn REQUIRE_PASSWORD");
+                socket->disconnectFromHost();
+                return;
+            }
+
+            password.remove(QChar(':'));
+            ContestDB *db = ContestDB::GetInstance();
+            if(!db->checkPassword(screen_name, password)){
+                socket->send("warn WRONG_PASSWORD");
+                socket->disconnectFromHost();
                 return;
             }
         }
+
+        if(command == "signupr"){
+            foreach(QString objname, name2objname.values(screen_name)){
+                ServerPlayer *player = players.value(objname);
+                if(player && player->getState() == "offline"){
+                    player->getRoom()->reconnect(player, socket);
+                    return;
+                }
+            }
+        }
+
+        //         if(current == NULL || current->isFull())
+        //             createNewRoom();
+        //         ServerPlayer *player = current->addSocket(socket);
+        //         current->signup(player, screen_name, avatar, false);
+        if(current == NULL || current->isFull()){
+            createNewRoom();
+            current->setTag("RoomOwnerScreenName",screen_name);
+        }
+        ServerPlayer *player = current->addSocket(socket);
+        current->signup(player, screen_name, avatar, false);
     }
-
-    if(current == NULL || current->isFull())
-        createNewRoom();
-
-    ServerPlayer *player = current->addSocket(socket);
-    current->signup(player, screen_name, avatar, false);
 }
 
 void Server::cleanup(){
@@ -922,4 +1284,186 @@ void Server::gameOver(){
         name2objname.remove(player->screenName(), player->objectName());
         players.remove(player->objectName());
     }
+}
+
+// 20111218
+void Server::process_SS_Reply(char *reply){
+    if(strlen(reply) <= 2) return;
+    QString cmd=QString(reply);
+    cmd=cmd.trimmed();
+    if(cmd.indexOf("nodelist")!=-1)
+    {
+        QStringList tmplist = cmd.split(" ");
+        if (!nodeList.contains(tmplist[1])) // new node
+        {
+            nodeList.insert(tmplist[1], clock());
+        }
+        else if(nodeList[tmplist[1]]!=0) // update old node
+        {
+            nodeList.insert(tmplist[1], clock());
+        }
+        else
+        {;}
+    }
+}
+
+void Server::process_SS_error_message(QString msg){
+    // QMessageBox::warning(NULL,"process_SS_error_message",msg);
+}
+
+void Server::timerTrigger() // clear node list and announce
+{
+    if(!Config.AnnounceIP)
+        return;
+
+    //emit server_message("timerTrigger");
+    QHashIterator <QString, long> i(nodeList);
+    while (i.hasNext()) {
+        i.next();
+        if(i.value()!=0)
+        {
+            if(clock()-i.value()>60*8*1000*60)
+            {
+                nodeList.remove(i.key());
+                Config.HistoryNodeList.removeOne(i.key());
+                Config.HistoryNodeList.removeDuplicates();
+                Config.HistoryNodeList.sort();
+                Config.setValue("HistoryNodeList", Config.HistoryNodeList);
+            }
+            else
+            {
+                QString tmp=i.key();
+                QStringList tmplist = tmp.split(":");
+                NativeClientSocket *socket=new NativeClientSocket;
+                socket->connectToNode(tmplist[0],tmplist[1].toInt());
+                socket->send("nodealive "+Config.Address.toLower()+":"+QString::number(Config.ServerPort)+":"+Config.GameMode);
+            }
+        }
+    }
+}
+
+// 20111220
+void Server::roomFinished(){
+    Room *room = qobject_cast<Room *>(sender());
+    rooms.remove(room);
+
+    foreach(ServerPlayer *player, room->findChildren<ServerPlayer *>()){
+        name2objname.remove(player->screenName(), player->objectName());
+        players.remove(player->objectName());
+    }
+}
+
+void Server::processCmdLine()
+{
+    QLineEdit *cmd = qobject_cast<QLineEdit *>(sender());
+    QString servercmd=cmd->text().toLower();
+    emit server_message(servercmd);
+    cmd->clear();
+    if(servercmd.indexOf("cls")!=-1){ emit(clearlog()); return;}
+    if(servercmd.indexOf("msg on")!=-1){
+        foreach(Room *room, rooms){
+            connect(room, SIGNAL(room_message(QString)), this, SIGNAL(server_message(QString)));
+        }
+        return;
+    }
+    if(servercmd.indexOf("msg off")!=-1){
+        foreach(Room *room, rooms){
+            disconnect(room, SIGNAL(room_message(QString)), this, SIGNAL(server_message(QString)));
+        }
+        return;
+    }
+    if(servercmd.indexOf("broadcast")!=-1){
+        QStringList tmp=servercmd.split(" ");
+        this->broadcast(tmp[1]);
+        return;
+    }
+    if(servercmd.indexOf("serverplayerlist")!=-1){
+        QHashIterator <QString, QString> i(name2objname);
+        while (i.hasNext()) {
+            i.next();
+            emit server_message(i.key()+" -> "+i.value());
+        }
+        return;
+    }
+    if(servercmd.indexOf("playerlist")!=-1){
+        foreach(Room *room, rooms)
+        {
+            foreach(ServerPlayer *player, room->players){
+                QString tmp;
+                tmp="RoomID:"+room->getTag("RoomID").toString()+" -> "; // +room->getTag("RoomOwnerScreenName").toString();
+                tmp+="     PlayerID:" + player->objectName() + " - " + player->screenName() + " - " + player->getState();
+                tmp+=" - IP:" + player->getIp();
+                emit server_message(tmp);
+            }
+        }
+        return;
+    }
+    if(servercmd.indexOf("nodelist")!=-1)
+    {
+        QHashIterator <QString, long> i(nodeList);
+        while (i.hasNext()) {
+            i.next();
+
+            if(clock()-i.value()>60*8*1000*60 && i.value()!=0)
+            {
+                nodeList.remove(i.key());
+                emit server_message("cmd nodelist: Remove node-> "+i.key());
+            }
+            else
+            {
+                emit server_message("cmd nodelist: "+i.key());
+            }
+        }
+        return;
+    }
+    else if(servercmd.indexOf("roomlist")!=-1)
+    {
+        foreach(Room *room, rooms)
+        {
+            QString roomstatus="";
+            if(room->game_started){ roomstatus="Playing"; } else {roomstatus="Waiting";}
+            int robotcount=0;
+            int playercount=0;
+            foreach(ServerPlayer *player, room->players){
+                if(player->getState() != "robot")
+                    playercount ++;
+                else if(player->getState() == "robot")
+                    robotcount++;
+            }
+            QString base64=room->getTag("RoomOwnerScreenName").toString();// .toUtf8().toBase64();
+            // 20111220
+            if(!base64.trimmed().isEmpty())
+            {
+                if((playercount+robotcount==0 || playercount+robotcount>8))
+                {
+                    rooms.remove(room);
+                    emit server_message("cmd roomlist: Remove room-> "+room->getTag("RoomID:").toString()+base64);
+                }
+                else
+                {
+                    emit server_message("cmd roomlist: " + room->getTag("RoomID").toString() +":"+ base64 +":"+ QString::number(playercount) + ":" + roomstatus );
+                }
+            }
+        }
+        return;
+    }
+    else if(servercmd.indexOf("myconfig")!=-1)
+    {
+        QString tmp;
+        emit server_message("ServerName: "+Config.ServerName);
+        emit server_message("Version: "+Sanguosha->getVersion());
+        emit server_message("GameMode: "+Config.GameMode);
+        // emit server_message("BanPackages: "+Sanguosha->getSetupString());
+        tmp=Config.Enable2ndGeneral?"Yes":"No";
+        emit server_message("Enable2ndGeneral: "+tmp);
+        emit server_message("AddresssPort: "+Config.Address+":"+QString::number(Config.ServerPort));
+        tmp=Config.EnableAI?"Yes":"No";
+        emit server_message("EnableAI: "+tmp);
+        emit server_message("AIDelay: "+QString::number(Config.AIDelay));
+        tmp=Config.AnnounceIP?"Yes":"No";
+        emit server_message("AnnounceIP: "+tmp);
+        emit server_message("NodeAddressPort: "+Config.NodeAddress+":"+QString::number(Config.NodePort));
+        return;
+    }
+    else{;}
 }

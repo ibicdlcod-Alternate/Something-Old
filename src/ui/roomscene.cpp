@@ -35,9 +35,6 @@
 #include <QCommandLinkButton>
 #include <QFormLayout>
 #include <QStatusBar>
-#include <QMovie>
-
-
 
 #ifdef Q_OS_WIN32
 #include <QAxObject>
@@ -62,23 +59,126 @@
 #endif
 #endif
 
-static QPointF DiscardedPos(-6, -2);
-static QPointF DrawPilePos(-102, -2);
+static QPointF DiscardedPos(-6+15, -2);
+static QPointF DrawPilePos(-102+15, -2);
+
 
 RoomScene *RoomSceneInstance;
 
 RoomScene::RoomScene(QMainWindow *main_window)
     :focused(NULL), special_card(NULL), viewing_discards(false),
-      main_window(main_window),game_started(false)
+    main_window(main_window)
 {
     RoomSceneInstance = this;
+
+    // 20111218 by Highlandz
+    // some vars for custom scene INIT
+    autoShowDiscards=Config.value("AutoShowDiscards").toBool();
+    discarded_queue_size=20;
+    discarded_area_y_offset=140;
+    discarded_area_middle=0;
+    discarded_area_width=600;
+    discarded_area_cards=8;
+
+    PhotoPos1_x_offset=0;
+    PhotoPos1_y_offset=0;
+    PhotoPos2_x_offset=0;
+    PhotoPos2_y_offset=0;
+    PhotoPos3_x_offset=0;
+    PhotoPos3_y_offset=0;
+    PhotoPos4_x_offset=0;
+    PhotoPos4_y_offset=0;
+    PhotoPos5_x_offset=0;
+    PhotoPos5_y_offset=0;
+    StateItem_x_offset=0;
+    StateItem_y_offset=0;
+    ChatBox_x_offset=0;
+    ChatBox_y_offset=0;
+    ChatBox_width_offset=0;
+    ChatBox_height_offset=0;
+    LogBox_x_offset=0;
+    LogBox_y_offset=0;
+    LogBox_width_offset=0;
+    LogBox_height_offset=0;
+    DiscardedPos_x_offset=0;
+    DiscardedPos_y_offset=0;
+    DrawPilePos_x_offset=0;
+    DrawPilePos_y_offset=0;
+
+    if(Config.value("EnableCustomScene").toBool()){
+        QStringList tmp ;
+
+        tmp=Config.value("PhotoPos1").toString().split(",");
+        PhotoPos1_x_offset=tmp.at(0).toInt();
+        PhotoPos1_y_offset=tmp.at(1).toInt();
+        tmp.clear();
+
+        tmp=Config.value("PhotoPos2").toString().split(",");
+        PhotoPos2_x_offset=tmp.at(0).toInt();
+        PhotoPos2_y_offset=tmp.at(1).toInt();
+        tmp.clear();
+
+        tmp=Config.value("PhotoPos3").toString().split(",");
+        PhotoPos3_x_offset=tmp.at(0).toInt();
+        PhotoPos3_y_offset=tmp.at(1).toInt();
+        tmp.clear();
+
+        tmp=Config.value("PhotoPos4").toString().split(",");
+        PhotoPos4_x_offset=tmp.at(0).toInt();
+        PhotoPos4_y_offset=tmp.at(1).toInt();
+        tmp.clear();
+
+        tmp=Config.value("PhotoPos5").toString().split(",");
+        PhotoPos5_x_offset=tmp.at(0).toInt();
+        PhotoPos5_y_offset=tmp.at(1).toInt();
+        tmp.clear();
+
+        tmp=Config.value("DiscardedArea").toString().split(",");
+        discarded_area_y_offset=tmp.at(0).toInt();
+        discarded_area_width=tmp.at(1).toInt();
+        discarded_area_cards=tmp.at(2).toInt();
+        tmp.clear();
+
+        tmp=Config.value("DiscardedPos").toString().split(",");
+        DiscardedPos_x_offset=tmp.at(0).toInt();
+        DiscardedPos_y_offset=tmp.at(1).toInt();
+        tmp.clear();
+
+        tmp=Config.value("DrawPilePos").toString().split(",");
+        DrawPilePos_x_offset=tmp.at(0).toInt();
+        DrawPilePos_y_offset=tmp.at(1).toInt();
+        tmp.clear();
+
+        tmp=Config.value("StateItem").toString().split(",");
+        StateItem_x_offset=tmp.at(0).toInt();
+        StateItem_y_offset=tmp.at(1).toInt();
+        tmp.clear();
+
+        tmp=Config.value("ChatBox").toString().split(",");
+        ChatBox_x_offset=tmp.at(0).toInt();
+        ChatBox_y_offset=tmp.at(1).toInt();
+        ChatBox_width_offset=tmp.at(2).toInt();
+        ChatBox_height_offset=tmp.at(3).toInt();
+        tmp.clear();
+
+        tmp=Config.value("LogBox").toString().split(",");
+        LogBox_x_offset=tmp.at(0).toInt();
+        LogBox_y_offset=tmp.at(1).toInt();
+        LogBox_width_offset=tmp.at(2).toInt();
+        LogBox_height_offset=tmp.at(3).toInt();
+        tmp.clear();
+    }
 
     int player_count = Sanguosha->getPlayerCount(ServerInfo.GameMode);
 
     bool circular = Config.value("CircularView", false).toBool();
     if(circular){
-        DiscardedPos = QPointF(-140, -60);
-        DrawPilePos = QPointF(-260, -60);
+        DiscardedPos = QPointF(-140 +15+DiscardedPos_x_offset , -60 -50+DiscardedPos_y_offset);
+        DrawPilePos = QPointF(-260 +15+DrawPilePos_x_offset, -60 -50+DrawPilePos_y_offset);
+    }
+    else{
+        DiscardedPos = QPointF(-6+15 +DiscardedPos_x_offset , -2 -50+DiscardedPos_y_offset);
+        DrawPilePos = QPointF(-102+15+DrawPilePos_x_offset, -2 -50+DrawPilePos_y_offset);
     }
 
     // create photos
@@ -92,7 +192,6 @@ RoomScene::RoomScene(QMainWindow *main_window)
     {
         // create dashboard
         dashboard = new Dashboard;
-        dashboard->setObjectName("dashboard");
         addItem(dashboard);
 
         dashboard->setPlayer(Self);
@@ -162,7 +261,7 @@ RoomScene::RoomScene(QMainWindow *main_window)
     connect(ClientInstance, SIGNAL(skill_acquired(const ClientPlayer*,QString)), this, SLOT(acquireSkill(const ClientPlayer*,QString)));
     connect(ClientInstance, SIGNAL(animated(QString,QStringList)), this, SLOT(doAnimation(QString,QStringList)));
     connect(ClientInstance, SIGNAL(judge_result(QString,QString)), this, SLOT(showJudgeResult(QString,QString)));
-    connect(ClientInstance, SIGNAL(role_state_changed(QString)),this, SLOT(updateStateItem(QString)));
+    connect(ClientInstance, SIGNAL(role_state_changed(QString)),this, SLOT(update_state_item(QString)));
 
     connect(ClientInstance, SIGNAL(game_started()), this, SLOT(onGameStart()));
     connect(ClientInstance, SIGNAL(game_over()), this, SLOT(onGameOver()));
@@ -252,13 +351,25 @@ RoomScene::RoomScene(QMainWindow *main_window)
     {
         // chat box
         chat_box = new QTextEdit;
-        chat_box->resize(230 + widen_width, 175);
-        chat_box->setObjectName("chat_box");
+        if(circular){
+            chat_box->resize(268+ChatBox_width_offset, 165+ChatBox_height_offset);
+        }
+        else{
+            chat_box->resize(230 + widen_width+ChatBox_width_offset, 175+ChatBox_height_offset);
+        }
 
-        chat_box_widget = addWidget(chat_box);
-        chat_box_widget->setPos(-343 - widen_width, -83);
+
+        QGraphicsProxyWidget *chat_box_widget = addWidget(chat_box);
+        if(circular){
+            chat_box_widget->setPos(367 +ChatBox_x_offset , -38+ChatBox_y_offset);
+        }
+        else{
+            chat_box_widget->setPos(-343 - widen_width + ChatBox_x_offset, -83+ChatBox_y_offset);
+
+        }
+
+
         chat_box_widget->setZValue(-2.0);
-        chat_box_widget->setObjectName("chat_box_widget");
 
         chat_box->setReadOnly(true);
         chat_box->setTextColor(Config.TextEditColor);
@@ -267,29 +378,20 @@ RoomScene::RoomScene(QMainWindow *main_window)
         // chat edit
         chat_edit = new QLineEdit;
         chat_edit->setFixedWidth(chat_box->width());
-        chat_edit->setObjectName("chat_edit");
-
-#if QT_VERSION >= 0x040700
-        chat_edit->setPlaceholderText(tr("Please enter text to chat ... "));
-#endif
+        chat_edit->setFixedHeight(24);
 
         QGraphicsProxyWidget *chat_edit_widget = new QGraphicsProxyWidget(chat_box_widget);
         chat_edit_widget->setWidget(chat_edit);
         chat_edit_widget->setX(0);
         chat_edit_widget->setY(chat_box->height());
-        chat_edit_widget->setObjectName("chat_edit_widget");
         connect(chat_edit, SIGNAL(returnPressed()), this, SLOT(speak()));
 
-        if(circular){
-            chat_box->resize(268, 165);
-            chat_box_widget->setPos(367 , -38);
+        chat_edit_widget->setX(0);
+        chat_edit_widget->setY(chat_box->height()+1);
 
-            chat_edit->setFixedWidth(chat_box->width());
-            //chat_edit->(24);
-            chat_edit_widget->setX(0);
-            chat_edit_widget->setY(chat_box->height()+1);
-        }
-
+#if QT_VERSION >= 0x040700
+        chat_edit->setPlaceholderText(tr("Please enter text to chat ... "));
+#endif
         if(ServerInfo.DisableChat)
             chat_edit_widget->hide();
     }
@@ -297,25 +399,32 @@ RoomScene::RoomScene(QMainWindow *main_window)
     {
         // log box
         log_box = new ClientLogBox;
-        log_box->resize(chat_box->width(), 205);
+        if(circular){
+            log_box->resize(chat_box->width()+LogBox_width_offset, 210+LogBox_height_offset);
+        }
+        else{
+            log_box->resize(chat_box->width()+LogBox_width_offset, 205+LogBox_height_offset);
+        }
+
         log_box->setTextColor(Config.TextEditColor);
-        log_box->setObjectName("log_box");
 
         QGraphicsProxyWidget *log_box_widget = addWidget(log_box);
-        log_box_widget->setPos(114, -83);
+        if(circular){
+
+            log_box_widget->setPos(367+LogBox_x_offset, -246+LogBox_y_offset);
+        }
+        else{
+            log_box_widget->setPos(114+LogBox_x_offset, -83+LogBox_y_offset);
+        }
+
         log_box_widget->setZValue(-2.0);
-        log_box_widget->setObjectName("log_box_widget");
         connect(ClientInstance, SIGNAL(log_received(QString)), log_box, SLOT(appendLog(QString)));
 
-        if(circular){
-            log_box->resize(chat_box->width(), 210);
-            log_box_widget->setPos(367, -246);
-        }
     }
 
     {
         prompt_box = new Window(tr("Sanguosha"), QSize(480, 200));
-        prompt_box->setOpacity(0);
+        prompt_box->setOpacity(0.8);
         prompt_box->setFlag(QGraphicsItem::ItemIsMovable);
         prompt_box->shift();
         prompt_box->setZValue(10);
@@ -365,8 +474,6 @@ RoomScene::RoomScene(QMainWindow *main_window)
     addWidgetToSkillDock(sort_combobox, true);
 
     createStateItem();
-
-    animations = new EffectAnimation();
 }
 
 void RoomScene::createButtons(){
@@ -391,9 +498,9 @@ void RoomScene::createButtons(){
 
         dashboard->setWidth(main_window->width()-10);
     }else{
-        dashboard->addWidget(ok_button, -72, false);
-        dashboard->addWidget(cancel_button, -7, false);
-        dashboard->addWidget(discard_button, 75, false);
+        dashboard->addWidget(ok_button, -120, false);
+        dashboard->addWidget(cancel_button, -40, false);
+        dashboard->addWidget(discard_button, 40, false);
     }
 
     connect(trust_button, SIGNAL(clicked()), ClientInstance, SLOT(trust()));
@@ -445,7 +552,7 @@ ReplayerControlBar::ReplayerControlBar(Dashboard *dashboard){
     setWidget(widget);
 
     setParentItem(dashboard);
-    setPos(0,-35);
+    moveBy(0, -35);
 
     duration_str = FormatTime(replayer->getDuration());
 }
@@ -504,14 +611,13 @@ void RoomScene::adjustItems(){
     int i;
     for(i=0; i<positions.length(); i++)
         photos.at(i)->setPos(positions.at(i));
-
-    reLayout();
 }
 
 QList<QPointF> RoomScene::getPhotoPositions() const{
     static int four=0;
     static int five=0;
     static int six=0;
+    static int six_3v3=0;
     static int seven=0;
     static int eight=0;
     static int nine=0;
@@ -522,7 +628,11 @@ QList<QPointF> RoomScene::getPhotoPositions() const{
     switch(player_count){
     case 4: four = 1; break;
     case 5: five = 1; break;
-    case 6: six = 1; break;
+    case 6: if(ServerInfo.GameMode == "06_3v3")
+                six_3v3 = 1;
+            else
+                six = 1;
+            break;
     case 7: seven = 1; break;
     case 8: eight = 1; break;
     case 9: nine = 1; break;
@@ -534,15 +644,15 @@ QList<QPointF> RoomScene::getPhotoPositions() const{
     }
 
     static const QPointF pos[] = {
-        QPointF((-630+cxw2*129)+(cxw*four*70)+(cxw*six*50), (-70+cxw2)+(-four*cxw*80)+(-six*cxw*50)), // 0:zhugeliang
-        QPointF((-630+cxw2*129)+(cxw*eight*50)+(cxw*five*50)+(cxw*nine*20), (-270-cxw2*3)+(cxw*five*100)), // 1:wolong
-        QPointF((-487+cxw2*131)+(cxw*six*80)+(-seven*cxw*25)+(cxw*nine*45), (-316+cxw2*22)+(cxw*six*15)+(cxw*seven*30)), // 2:shenzhugeliang
-        QPointF((-344+cxw2*133)+(-eight*cxw*50)+(cxw*five*15)+(cxw*seven*50)+(cxw*nine*65), (-320+cxw2*26)), // 3:lusu
-        QPointF((-201+cxw2*135), -324+cxw2*30), // 4:dongzhuo
-        QPointF((-58+cxw2*137)+(cxw*eight*50)+(-five*cxw*15)+(-seven*cxw*50)+(-nine*cxw*65), (-320+cxw2*26)), // 5:caocao
-        QPointF((85+cxw2*139)+(-six*cxw*80)+(seven*cxw*25)+(-nine*cxw*45), (-316+cxw2*22)+(six*cxw*15)+(seven*cxw*30)), // 6:shuangxiong
-        QPointF((228+cxw2*141)+(-eight*cxw*50)+(-five*cxw*50)+(-nine*cxw*20), (-270-cxw2*3)+(five*cxw*100)), // 7:shenguanyu
-        QPointF((228+cxw2*141)+(-four*cxw*70)+(-six*cxw*50), (-70+cxw2)+(-four*cxw*80)+(-six*cxw*50)), // 8:xiaoqiao
+        QPointF((-630+cxw2*129)+(cxw*five*50)+(cxw*six_3v3*50)+(cxw*six*100)+(cxw*seven*100)+(cxw*eight*50)+(cxw*nine*20) + PhotoPos5_x_offset , (-70+cxw2)-(cxw*four*80)+PhotoPos5_y_offset) , // 0:zhugeliang
+        QPointF((-630+cxw2*129)+(cxw*five*50)+(cxw*six_3v3*50)+(cxw*eight*50)+(cxw*nine*20)+PhotoPos4_x_offset, (-270-cxw2*3)+(cxw*five*150)+PhotoPos4_y_offset), // 1:wolong
+        QPointF((-487+cxw2*131)+(cxw*six*80)+(cxw*seven*5)+(cxw*nine*45)+PhotoPos3_x_offset, (-316+cxw2*22)+(cxw*six*15)+(cxw*seven*30)+PhotoPos3_y_offset), // 2:shenzhugeliang
+        QPointF((-344+cxw2*133)+(cxw*five*15)+(cxw*seven*50)-(cxw*eight*50)+(cxw*nine*65)+PhotoPos2_x_offset, (-320+cxw2*26)+PhotoPos2_y_offset), // 3:lusu
+        QPointF((-201+cxw2*135)+PhotoPos1_x_offset,(-324+cxw2*30)+PhotoPos1_y_offset), // 4:dongzhuo
+        QPointF(( -58+cxw2*137)-(cxw*five*15)-(cxw*seven*50)+(cxw*eight*50)-(cxw*nine*65)-PhotoPos2_x_offset, (-320+cxw2*26)+PhotoPos2_y_offset), // 5:caocao
+        QPointF((  85+cxw2*139)-(cxw*six*80)-(cxw*seven*5)-(cxw*nine*45)-PhotoPos3_x_offset, (-316+cxw2*22)+(cxw*six*15)+(cxw*seven*30)+PhotoPos3_y_offset), // 6:shuangxiong
+        QPointF(( 228+cxw2*141)-(cxw*five*50)-(cxw*six_3v3*50)-(cxw*eight*50)-(cxw*nine*20)-PhotoPos4_x_offset, (-270-cxw2*3)+(cxw*five*150)+PhotoPos4_y_offset), // 7:shenguanyu
+        QPointF(( 228+cxw2*141)-(cxw*five*50)-(cxw*six_3v3*50)-(cxw*six*100)-(cxw*seven*100)-(cxw*eight*50)-(cxw*nine*20)-PhotoPos5_x_offset, (-70+cxw2)-(cxw*four*80)+PhotoPos5_y_offset), // 8:xiaoqiao
     };
 
     static int indices_table[][9] = {
@@ -573,37 +683,11 @@ QList<QPointF> RoomScene::getPhotoPositions() const{
     else
         indices = indices_table[photos.length() - 1];
 
-    qreal stretch_x = main_window->width()  - chat_box->width();
-    stretch_x/=1075;
-    qreal stretch_y = (main_window->height() - dashboard->boundingRect().height())/575;
-
-    QPointF offset = QPoint( - chat_box->width()*(1-stretch_x)/2,
-                             - dashboard->boundingRect().height()*(1-stretch_y)/2);
-
-
-    if(!Config.value("CircularView",false).toBool())
-    {
-        stretch_x = 1;
-        stretch_y = 1;
-        offset=QPoint(0,0);
-    }
-
     int i;
     for(i=0; i<photos.length(); i++){
         int index = indices[i];
-        QPointF aposition = pos[index];
-
-        aposition.rx()*=stretch_x;
-        aposition.ry()*=stretch_y;
-
-        aposition.rx()+=offset.x();
-        aposition.ry()+=offset.y();
-
-        positions << aposition;
+        positions << pos[index];
     }
-
-
-
 
     return positions;
 }
@@ -676,12 +760,9 @@ void RoomScene::arrangeSeats(const QList<const ClientPlayer*> &seats){
     if(item2player.isEmpty()){
         item2player.insert(avatar, Self);
         connect(avatar, SIGNAL(selected_changed()), this, SLOT(updateSelectedTargets()));
-        connect(avatar, SIGNAL(selected_changed()), this, SLOT(onSelectChange()));
         foreach(Photo *photo, photos){
             item2player.insert(photo, photo->getPlayer());
             connect(photo, SIGNAL(selected_changed()), this, SLOT(updateSelectedTargets()));
-            connect(photo, SIGNAL(selected_changed()), this, SLOT(onSelectChange()));
-            connect(photo, SIGNAL(enable_changed()), this, SLOT(onEnabledChange()));
         }
     }
 }
@@ -710,18 +791,17 @@ void RoomScene::drawNCards(ClientPlayer *player, int n){
 
         QPropertyAnimation *ugoku = new QPropertyAnimation(pixmap, "pos");
         ugoku->setStartValue(DrawPilePos);
-        ugoku->setDuration(800);
-        ugoku->setEasingCurve(QEasingCurve::OutQuad);
+        ugoku->setDuration(1000);
+        ugoku->setEasingCurve(QEasingCurve::OutQuart);
         ugoku->setEndValue(photo->pos() + QPointF(20 *i, 0));
 
         QPropertyAnimation *kieru = new QPropertyAnimation(pixmap, "opacity");
-        kieru->setKeyValueAt(0, 1.0);
-        kieru->setKeyValueAt(0.8, 1.0);
+        kieru->setKeyValueAt(0.4, 1.0);
         kieru->setEndValue(0.0);
-        kieru->setDuration(800);
+        kieru->setDuration(500);
 
         moving->addAnimation(ugoku);
-        moving->addAnimation(kieru);
+        disappering->addAnimation(kieru);
 
         connect(kieru, SIGNAL(finished()), pixmap, SLOT(deleteLater()));
     }
@@ -1128,7 +1208,17 @@ void RoomScene::moveCard(const CardMoveStructForClient &move){
     if(card_item->scene() == NULL)
         addItem(card_item);
 
-    putCardItem(dest, dest_place, card_item);
+    //20111218 by Highlandz write desc on cards
+    if(src != NULL && src_place != Player::Judging)
+    {
+        QString from_general="";
+        from_general= src->getGeneralName();
+        from_general = Sanguosha->translate(from_general);
+        putCardItem(from_general, dest, dest_place, card_item);
+    }
+    else{
+        putCardItem( dest, dest_place, card_item);
+    }
 
     QString card_str = QString::number(card_id);
     if(src && dest){
@@ -1173,7 +1263,7 @@ void RoomScene::putCardItem(const ClientPlayer *dest, Player::Place dest_place, 
     if(dest == NULL){
         if(dest_place == Player::DiscardedPile){
             card_item->setHomePos(DiscardedPos);
-            card_item->goBack(true,false,false);
+            card_item->goBack();
             card_item->setEnabled(true);
 
             card_item->setFlag(QGraphicsItem::ItemIsFocusable, false);
@@ -1196,6 +1286,7 @@ void RoomScene::putCardItem(const ClientPlayer *dest, Player::Place dest_place, 
             card_item->setHomePos(DrawPilePos);
             card_item->goBack();
         }
+        if(autoShowDiscards) autoUpdateDiscards();
 
     }else if(dest->objectName() == Self->objectName()){
         switch(dest_place){
@@ -1410,13 +1501,12 @@ void RoomScene::enableTargets(const Card *card){
     }
 
     if(card == NULL){
+        bool inactive = ClientInstance->getStatus() == Client::NotActive;
         foreach(QGraphicsItem *item, item2player.keys()){
-            //if(!inactive)
-                animations->effectOut(item);
-                //item->setOpacity(0.7);
+            if(!inactive)
+                item->setOpacity(0.7);
 
             item->setFlag(QGraphicsItem::ItemIsSelectable, false);
-            item->setEnabled(true);
         }
 
         ok_button->setEnabled(false);
@@ -1425,8 +1515,7 @@ void RoomScene::enableTargets(const Card *card){
 
     if(card->targetFixed() || ClientInstance->noTargetResponsing()){
         foreach(QGraphicsItem *item, item2player.keys()){
-            //item->setOpacity(1.0);
-            animations->effectOut(item);
+            item->setOpacity(1.0);
             item->setFlag(QGraphicsItem::ItemIsSelectable, false);
         }
 
@@ -1453,21 +1542,11 @@ void RoomScene::updateTargetsEnablity(const Card *card){
         if(item->isSelected())
             continue;
 
-        bool enabled;
-        if(card)enabled= !Sanguosha->isProhibited(Self, player, card)
+        bool enabled = !Sanguosha->isProhibited(Self, player, card)
                        && card->targetFilter(selected_targets, player, Self);
-        else enabled = true;
 
-        //item->setOpacity(enabled ? 1.0 : 0.7);
-        if(enabled)animations->effectOut(item);
-        else
-        {
-            if(item->graphicsEffect() &&
-                    item->graphicsEffect()->inherits("SentbackEffect"));
-            else animations->sendBack(item);
-        }
-
-        if(card)item->setFlag(QGraphicsItem::ItemIsSelectable, enabled);
+        item->setOpacity(enabled ? 1.0 : 0.7);
+        item->setFlag(QGraphicsItem::ItemIsSelectable, enabled);
     }
 }
 
@@ -1486,13 +1565,11 @@ void RoomScene::updateSelectedTargets(){
             selected_targets.removeOne(player);
         }
 
-
+        updateTargetsEnablity(card);
         ok_button->setEnabled(card->targetsFeasible(selected_targets, Self));
     }else{
         selected_targets.clear();
     }
-
-    updateTargetsEnablity(card);
 }
 
 void RoomScene::useSelectedCard(){
@@ -1584,25 +1661,7 @@ void RoomScene::useSelectedCard(){
     const ViewAsSkill *skill = dashboard->currentSkill();
     if(skill)
         dashboard->stopPending();
-
-    updateTargetsEnablity();
 }
-
-void RoomScene::onSelectChange()
-{
-    QGraphicsItem * photo = qobject_cast<QGraphicsItem*>(sender());
-    if(!photo)return;
-    if(photo->isSelected())animations->emphasize(photo);
-    else animations->effectOut(photo);
-}
-void RoomScene::onEnabledChange()
-{
-    QGraphicsItem * photo = qobject_cast<QGraphicsItem*>(sender());
-    if(!photo)return;
-    if(photo->isEnabled())animations->effectOut(photo);
-    else animations->sendBack(photo);
-}
-
 
 void RoomScene::useCard(const Card *card){
     if(card->targetFixed() || card->targetsFeasible(selected_targets, Self))
@@ -1614,7 +1673,6 @@ void RoomScene::useCard(const Card *card){
 void RoomScene::callViewAsSkill(){
     const Card *card = dashboard->pendingCard();
 
-    updateTargetsEnablity();
     if(card == NULL)
         return;
 
@@ -2028,8 +2086,6 @@ void RoomScene::updateStatus(Client::Status status){
         tick = 0;
         progress_bar->show();
     }
-
-    updateTargetsEnablity();
 }
 
 void RoomScene::doSkillButton(){
@@ -2056,8 +2112,6 @@ void RoomScene::doSkillButton(){
             useSelectedCard();
         }
     }
-
-    updateTargetsEnablity();
 }
 
 void RoomScene::updateTrustButton(){
@@ -2190,8 +2244,6 @@ void RoomScene::doCancelButton(){
             break;
         }
     }
-
-    updateTargetsEnablity();
 }
 
 void RoomScene::doDiscardButton(){
@@ -2221,9 +2273,6 @@ void RoomScene::changeHp(const QString &who, int delta, DamageStruct::Nature nat
     else
         dashboard->update();
 
-    QStringList list = QString("%1:%2").arg(who).arg(delta).split(":");
-    doAnimation("hpChange",list);
-
     if(delta < 0){
         QString damage_effect;
         switch(delta){
@@ -2252,15 +2301,20 @@ void RoomScene::changeHp(const QString &who, int delta, DamageStruct::Nature nat
         Sanguosha->playAudio(damage_effect);
 
         if(photo){
-            //photo->setEmotion("damage");
-            setEmotion(who,"damage");
             photo->tremble();
         }
 
-        if(nature == DamageStruct::Fire)
+        if(nature == DamageStruct::Fire){
+            doAnimation("damage", QStringList() << who);
             doAnimation("fire", QStringList() << who);
-        else if(nature == DamageStruct::Thunder)
+        }
+        else if(nature == DamageStruct::Thunder){
+            doAnimation("damage", QStringList() << who);
             doAnimation("lightning", QStringList() << who);
+        }
+        else if(nature == DamageStruct::Normal){
+            doAnimation("damage", QStringList() << who);
+        }
 
     }else if(delta > 0){
         QString type = "#Recover";
@@ -2274,7 +2328,7 @@ void RoomScene::changeHp(const QString &who, int delta, DamageStruct::Nature nat
 void RoomScene::clearPile(){
     foreach(CardItem *item, discarded_queue){
         removeItem(item);
-        //delete item;
+        delete item;
     }
 
     discarded_queue.clear();
@@ -2363,7 +2417,8 @@ void RoomScene::onGameOver(){
             loser_list << player;
 
         if(player != Self){
-            setEmotion(player->objectName(),win ? "good" : "bad",true);
+            Photo *photo = name2photo.value(player->objectName());
+            photo->setEmotion(win ? "good" : "bad", true);
         }
     }
 
@@ -2751,10 +2806,20 @@ void RoomScene::doGongxin(const QList<int> &card_ids, bool enable_heart){
 void RoomScene::createStateItem(){
     bool circular = Config.value("CircularView", false).toBool();
 
-    QPixmap state("image/system/state.png");
+    QPixmap state;
+    if(circular)
+        state=QPixmap("image/system/state2.png");
+    else
+        state=QPixmap("image/system/state.png");
 
     state_item = addPixmap(state);//QPixmap("image/system/state.png"));
-    state_item->setPos(-110, -90);
+
+    if(circular)
+        state_item->setPos(367+StateItem_x_offset, -340+StateItem_y_offset);
+    else
+        state_item->setPos(-110+StateItem_x_offset, -90+StateItem_y_offset);
+
+
     char roles[100] = {0};
     Sanguosha->getRoles(ServerInfo.GameMode, roles);
     updateStateItem(roles);
@@ -2766,8 +2831,6 @@ void RoomScene::createStateItem(){
     text_item->setTextWidth(220);
     text_item->setDefaultTextColor(Qt::white);
 
-    if(circular)
-        state_item->setPos(367, -320);
 
     if(ServerInfo.EnableAI){
         QRectF state_rect = state_item->boundingRect();
@@ -2947,7 +3010,7 @@ void RoomScene::onGameStart(){
 
     // add free discard button
     if(ServerInfo.FreeChoose && !ClientInstance->getReplayer()){
-        free_discard = dashboard->addButton("free-discard", 190, true);
+        QPushButton *free_discard = dashboard->addButton("free-discard", 190, true);
         free_discard->setToolTip(tr("Discard cards freely"));
         FreeDiscardSkill *discard_skill = new FreeDiscardSkill(this);
         button2skill.insert(free_discard, discard_skill);
@@ -3008,7 +3071,7 @@ void RoomScene::onGameStart(){
     BackgroundMusic = SoundEngine->play2D(filename, true, false, true);
 
     if(BackgroundMusic)
-        BackgroundMusic->setVolume(Config.Volume);
+        BackgroundMusic->setVolume(Config.BGMVolume);
 #else
     if (!BackgroundMusic) {
         SoundOutput = new Phonon::AudioOutput(Phonon::GameCategory, this);
@@ -3021,8 +3084,6 @@ void RoomScene::onGameStart(){
 #endif
 
 #endif
-    game_started = true;
-    reLayout();
 }
 
 #ifdef AUDIO_SUPPORT
@@ -3072,29 +3133,11 @@ void RoomScene::moveFocus(const QString &who){
     }
 }
 
-void RoomScene::setEmotion(const QString &who, const QString &emotion ,bool permanent){
+void RoomScene::setEmotion(const QString &who, const QString &emotion){
     Photo *photo = name2photo[who];
     if(photo){
-        photo->setEmotion(emotion,permanent);
+        photo->setEmotion(emotion);
     }
-
-        QLabel *item = new QLabel(emotion,main_window);
-        QMovie *movie = new QMovie(QString("image/system/animation/%1.gif").arg(emotion));
-
-        item->setMovie(movie);
-        movie->start();
-
-        connect(movie,SIGNAL(finished()),item,SLOT(deleteLater()));
-        QTimer::singleShot(1500, item, SLOT(deleteLater()));
-        movie->setBackgroundColor(QColor(0,0,0,0));
-        item->show();
-
-        int x = photo->scenePos().x() + main_window->width()/2;
-        int y = photo->scenePos().y() + main_window->height()/2;
-        int w = 128;
-        int h = 128;
-
-        item->setGeometry(x,y,w,h);
 }
 
 void RoomScene::showSkillInvocation(const QString &who, const QString &skill_name){
@@ -3153,136 +3196,7 @@ void RoomScene::doMovingAnimation(const QString &name, const QStringList &args){
     connect(group, SIGNAL(finished()), item, SLOT(deleteLater()));
 }
 
-void RoomScene::animateHpChange(const QString &name, const QStringList &args)
-{
-    QString who = args.at(0);
-    if(who == Self->objectName())
-    {
-        int delta = - args.at(1).toInt();
-
-        int hp = Self->getHp() + delta;
-        int max_hp = Self->getMaxHP();
-
-        int index = hp < max_hp ?
-                    qMin(hp,5) : 5;
-
-        QString path = max_hp > 6 ?
-                    QString("image/system/magatamas/small-%1.png").arg(index) :
-                    QString("image/system/magatamas/%1.png").arg(index);
-
-        qreal width = max_hp > 6 ? 14 : 22;
-        qreal total_width = width*max_hp;
-        qreal skip = (121 - total_width)/(max_hp+1);
-        qreal start_x = dashboard->getRightPosition();
-
-        for(int i=0;i<delta;i++)
-        {
-            Pixmap *aniMaga = new Pixmap(path);
-            addItem(aniMaga);
-            aniMaga->show();
-            i+=hp-delta;
-
-            QPoint pos = QPoint(start_x + skip * (i+1) + i * width,5);
-            pos.rx() += dashboard->scenePos().x();
-            pos.ry() += dashboard->scenePos().y();
-            aniMaga->setPos(pos);
-
-            QPropertyAnimation *fade = new QPropertyAnimation(aniMaga,"opacity");
-            fade->setEndValue(0);
-            QPropertyAnimation *grow = new QPropertyAnimation(aniMaga,"scale");
-            grow->setEndValue(4);
-
-            connect(fade,SIGNAL(finished()),aniMaga,SLOT(deleteLater()));
-
-            QParallelAnimationGroup *group = new QParallelAnimationGroup;
-            group->addAnimation(fade);
-            group->addAnimation(grow);
-
-            group->start(QAbstractAnimation::DeleteWhenStopped);
-
-
-
-            i-=hp-delta;
-        }
-
-        return;
-    }
-
-    Photo *photo = name2photo[who];
-    const Player *player = photo->getPlayer();
-    int delta = - args.at(1).toInt();
-
-    int hp = qMax(0, player->getHp() + delta);
-
-    int index = 5;
-    if(player->getHp() + delta < player->getMaxHP())
-        index = qBound(0, hp, 5);
-
-    for(int i=0;i<delta;i++)
-    {
-
-        i+=player->getHp();
-        Pixmap *aniMaga = new Pixmap(QString("image/system/magatamas/small-%1.png").arg(index));
-        addItem(aniMaga);
-
-        QPoint pos = i>=5 ? QPoint(42,69):QPoint(26,86);
-        pos.rx() += (i%5)*16;
-        pos.rx() += photo->scenePos().x();
-        pos.ry() += photo->scenePos().y();
-        aniMaga->setPos(pos);
-
-        QPropertyAnimation *fade = new QPropertyAnimation(aniMaga,"opacity");
-        fade->setEndValue(0);
-        QPropertyAnimation *grow = new QPropertyAnimation(aniMaga,"scale");
-        grow->setEndValue(4);
-
-        connect(fade,SIGNAL(finished()),aniMaga,SLOT(deleteLater()));
-
-        QParallelAnimationGroup *group = new QParallelAnimationGroup;
-        group->addAnimation(fade);
-        group->addAnimation(grow);
-
-        group->start(QAbstractAnimation::DeleteWhenStopped);
-
-        aniMaga->show();
-
-        i-=player->getHp();
-    }
-
-
-}
-
-void RoomScene::animatePopup(const QString &name, const QStringList &args)
-{
-    QPointF pos = getAnimationObject(args.at(0))->scenePos();
-
-    QPixmap *item = new QPixmap(QString("image/system/animation/%1.png").arg(name));
-    pos.rx()+=item->width()/2;
-    pos.ry()+=item->height()/2;
-
-    Sprite *sprite = new Sprite();
-    sprite->setParent(this);
-    sprite->setPixmapAtMid(*item);
-    Sprite *glare = new Sprite();
-    glare->setPixmapAtMid(*item);
-
-    sprite->setResetTime(300);
-    sprite->addKeyFrame(0,"opacity",0);
-    sprite->addKeyFrame(500,"opacity",1);
-    sprite->addKeyFrame(800,"opacity",1);
-    //sprite->addKeyFrame(1000,"opacity",0);
-    sprite->addKeyFrame(0,"scale",0.2,QEasingCurve::OutQuad);
-    sprite->addKeyFrame(300,"scale",1);
-    sprite->addKeyFrame(500,"scale",1.2);
-
-    sprite->start();
-
-    addItem(sprite);
-    sprite->setPos(pos);
-}
-
 void RoomScene::doAppearingAnimation(const QString &name, const QStringList &args){
-
     Pixmap *item = new Pixmap(QString("image/system/animation/%1.png").arg(name));
     addItem(item);
 
@@ -3388,20 +3302,23 @@ void RoomScene::doIndicate(const QString &name, const QStringList &args){
 void RoomScene::doAnimation(const QString &name, const QStringList &args){
     static QMap<QString, AnimationFunc> map;
     if(map.isEmpty()){
-        map["peach"] = &RoomScene::animatePopup;
-        map["jink"] = &RoomScene::animatePopup;
+        map["peach"] = &RoomScene::doMovingAnimation;
         map["nullification"] = &RoomScene::doMovingAnimation;
 
         map["analeptic"] = &RoomScene::doAppearingAnimation;
         map["fire"] = &RoomScene::doAppearingAnimation;
         map["lightning"] = &RoomScene::doAppearingAnimation;
         map["typhoon"] = &RoomScene::doAppearingAnimation;
+        map["slash"] = &RoomScene::doAppearingAnimation;
+        map["thunder-slash"] = &RoomScene::doAppearingAnimation;
+        map["fire-slash"] = &RoomScene::doAppearingAnimation;
+        map["jink"] = &RoomScene::doAppearingAnimation;
+        map["draw-card"] = &RoomScene::doAppearingAnimation;
+        map["damage"] = &RoomScene::doAppearingAnimation;
 
         map["lightbox"] = &RoomScene::doLightboxAnimation;
         map["huashen"] = &RoomScene::doHuashen;
         map["indicate"] = &RoomScene::doIndicate;
-
-        map["hpChange"] = &RoomScene::animateHpChange;
     }
 
     AnimationFunc func = map.value(name, NULL);
@@ -3754,33 +3671,36 @@ void RoomScene::finishArrange(){
     ClientInstance->request("arrange " + names.join("+"));
 }
 
-static inline void AddRoleIcon(QMap<QChar, QPixmap> &map, char c, const QString &role){
-    QPixmap pixmap(QString("image/system/roles/small-%1.png").arg(role));
-
-    QChar qc(c);
-    map[qc.toUpper()] = pixmap;
-
-    Pixmap::MakeGray(pixmap);
-    map[qc.toLower()] = pixmap;
+void RoomScene::update_state_item(const QString &qstr)
+{
+    char *c_str2 = qstr.toLocal8Bit().data();
+    updateStateItem(c_str2);
 }
 
-void RoomScene::updateStateItem(const QString &roles)
+void RoomScene::updateStateItem(char* roles)
 {
     foreach(QGraphicsItem *item, role_items)
         removeItem(item);
     role_items.clear();
 
-    static QMap<QChar, QPixmap> map;
-    if(map.isEmpty()){
-        AddRoleIcon(map, 'Z', "lord");
-        AddRoleIcon(map, 'C', "loyalist");
-        AddRoleIcon(map, 'F', "rebel");
-        AddRoleIcon(map, 'N', "renegade");
-    }
+    for(char *role = roles; *role!='\0'; role++){
+        static QPixmap lord("image/system/roles/small-lord.png");
+        static QPixmap loyalist("image/system/roles/small-loyalist.png");
+        static QPixmap rebel("image/system/roles/small-rebel.png");
+        static QPixmap renegade("image/system/roles/small-renegade.png");
 
-    foreach(QChar c, roles){
-        if(map.contains(c)){
-            QGraphicsPixmapItem *item = addPixmap(map.value(c));
+        QPixmap *to_add = NULL;
+        switch(*role){
+        case 'Z': to_add = &lord; break;
+        case 'C': to_add = &loyalist; break;
+        case 'N': to_add = &renegade; break;
+        case 'F': to_add = &rebel; break;
+        default:
+            break;
+        }
+
+        if(to_add){
+            QGraphicsPixmapItem *item = addPixmap(*to_add);
             item->setPos(21*role_items.length(), 6);
             item->setParentItem(state_item);
 
@@ -3789,139 +3709,129 @@ void RoomScene::updateStateItem(const QString &roles)
     }
 }
 
-void RoomScene::reLayout()
+
+// 20111218 by Highlandz for autoShowDiscardsArea
+void RoomScene::autoUpdateDiscards()
 {
-    if(!game_started)return;
-
-    QPoint pos = QPoint(dashboard->getMidPosition(),0);
-
-    int skip = 10;
-    int padding_left = 5;
-    int padding_top = -5;
-
-    pos.rx()+= padding_left;
-    pos.ry()+= padding_top;
-
-    alignTo(trust_button,pos,"xlyb");
-    alignTo(untrust_button,pos,"xlyb");
-    pos.rx()+=trust_button->width();
-    pos.rx()+=skip;
-
-    alignTo(reverse_button,pos,"xlyb");
-    pos.rx()+=reverse_button->width();
-    pos.rx()+=skip*2;
-
-
-    if(ServerInfo.FreeChoose&& !ClientInstance->getReplayer())
-    {
-        alignTo(free_discard,pos,"xlyb");
-        pos.rx()+=free_discard->width();
-        pos.rx()+=skip;
+    discarded_area_middle = (DiscardedPos.x()+DrawPilePos.x()+93)/2;
+    if(ClientInstance->discarded_list.isEmpty()){
+        return;
     }
 
-    pos = QPoint(dashboard->boundingRect().width()-dashboard->getRightPosition(),0);
-
-    pos.rx()-= padding_left;
-    pos.ry()+=padding_top;
-
-    alignTo(discard_button,pos,"xryb");
-    pos.rx()-=discard_button->width();
-    pos.rx()-=skip;
-
-    alignTo(cancel_button,pos,"xryb");
-    pos.rx()-=cancel_button->width();
-    pos.rx()-=skip;
-
-    alignTo(ok_button,pos,"xryb");
-    pos.rx()-=ok_button->width();
-    pos.rx()-=skip;
-    //ok_button->move(-10,-10);
-
-
-    if(!Config.value("circularView",false).toBool())
+    int discarded_area_x;
+    int discarded_area_y = discarded_area_y_offset + DiscardedPos.y();
+    int discarded_area_x_offset;
+    int nowCards=discarded_area_cards>discarded_queue.length()?discarded_queue.length():discarded_area_cards;
+    if(nowCards*93>discarded_area_width) // no enough space to show all discards
     {
-        pos.rx() = dashboard->x() + (dashboard->getMidPosition() + dashboard->getRightPosition())/2;
-
-        alignTo(state_item,pos,"xm");
-
-        pos.ry() = state_item->y();
-        pos.rx() = state_item->x()-padding_left;
-        alignTo(chat_box_widget,pos,"xryt");
-
-        pos.rx() = state_item->x() + state_item->boundingRect().width() + padding_left;
-        alignTo(log_box,pos,"xlyt");
-
-        log_box->setFixedHeight(chat_box->height() + chat_edit->height());
+        discarded_area_x = discarded_area_middle+discarded_area_width/2-93; // first card pos
+        discarded_area_x_offset = (discarded_area_width-93)/(nowCards-1); // other cards offset
     }
     else
     {
-        pos.ry() = -main_window->height()/2 + 30;
-        pos.ry() -= padding_top*2;
-
-        pos.rx() = main_window->width()/2 - padding_left
-                - chat_box->width()/2;
-                //state_item->x() + state_item->boundingRect().width()/2;
-
-        int height = main_window->height() - dashboard->boundingRect().height();
-        //height    += padding_top;
-        height    -= main_window->statusBar()->height()*2;
-        height    -= chat_edit->height()*2 + state_item->boundingRect().height();
-
-        chat_box->setFixedHeight(height/2);
-        chat_edit->move(0,chat_box->height());
-        log_box->setFixedHeight(height/2);
-
-        alignTo(state_item,pos,"xmyt");
-
-        pos.ry()+=state_item->boundingRect().height();
-        alignTo(log_box,pos,"xmyt");
-
-        pos.ry()+=log_box->height();
-        alignTo(chat_box_widget,pos,"xmyt");
-
-        dashboard->setWidth(main_window->width()-10);
+        discarded_area_x = discarded_area_middle+nowCards*93/2-93; // first card pos
+        discarded_area_x_offset = 93; // other cards offset
     }
 
+    int i;
+
+    for(i=0; i< nowCards; i++){
+        CardItem *card_item;
+        if(discarded_queue.length()>nowCards)
+        {
+            card_item = discarded_queue.at(i+discarded_queue.length()-nowCards);
+        }
+        else // show all discards
+        {
+            card_item = discarded_queue.at(i);
+        }
+        card_item->setHomePos(QPointF(discarded_area_x - i*discarded_area_x_offset, discarded_area_y));
+        card_item->goBack();
+    }
 }
 
-void RoomScene::alignTo(Pixmap *object, QPoint pos, const QString &flags)
+// 20111218 by highlandz rewrite putcarditem()
+void RoomScene::putCardItem(QString name, const ClientPlayer *dest, Player::Place dest_place, CardItem *card_item) //Highlandz
 {
-    QPointF to = object->pos();
-    if(flags.contains("xl"))to.rx() = pos.x();
-    else if(flags.contains("xr"))to.rx() = pos.x() - object->boundingRect().width();
-    else if(flags.contains("xm"))to.rx() = pos.x() - object->boundingRect().width()/2;
+    if(dest == NULL){
+        if(dest_place == Player::DiscardedPile){
 
-    if(flags.contains("yt"))to.ry() = pos.y();
-    else if(flags.contains("yb"))to.ry() = pos.y() - object->boundingRect().height();
-    else if(flags.contains("ym"))to.ry() = pos.y() - object->boundingRect().height()/2;
+            card_item->writeCardDesc(name);  // highlandz write desc text on cards
+            card_item->setHomePos(DiscardedPos);
+            card_item->goBack();
+            card_item->setEnabled(true);
 
-    object->setPos(to);
-}
+            card_item->setFlag(QGraphicsItem::ItemIsFocusable, false);
 
-void RoomScene::alignTo(QWidget *object, QPoint pos, const QString &flags)
-{
-    QPoint to = object->pos();
-    if(flags.contains("xl"))to.rx() = pos.x();
-    else if(flags.contains("xr"))to.rx() = pos.x() - object->width();
-    else if(flags.contains("xm"))to.rx() = pos.x() - object->width()/2;
+            card_item->setZValue(0.0001*ClientInstance->discarded_list.length());
+            discarded_queue.enqueue(card_item);
 
-    if(flags.contains("yt"))to.ry() = pos.y();
-    else if(flags.contains("yb"))to.ry() = pos.y() - object->height();
-    else if(flags.contains("ym"))to.ry() = pos.y() - object->height()/2;
+            if(discarded_queue.length() > discarded_queue_size){
+                CardItem *first = discarded_queue.dequeue();
+                delete first;
+            }
 
-    object->move(to.x(),to.y());
-}
+            connect(card_item, SIGNAL(toggle_discards()), this, SLOT(toggleDiscards()));
 
-void RoomScene::alignTo(QGraphicsItem* object, QPoint pos, const QString &flags)
-{
-    QPointF to = object->pos();
-    if(flags.contains("xl"))to.rx() = pos.x();
-    else if(flags.contains("xr"))to.rx() = pos.x() - object->boundingRect().width();
-    else if(flags.contains("xm"))to.rx() = pos.x() - object->boundingRect().width()/2;
+        }else if(dest_place == Player::DrawPile){
+            card_item->setHomePos(DrawPilePos);
+            card_item->goBack(true);
+        }else if(dest_place == Player::Special){
+            special_card = card_item;
+            card_item->setHomePos(DrawPilePos);
+            card_item->goBack();
+        }
 
-    if(flags.contains("yt"))to.ry() = pos.y();
-    else if(flags.contains("yb"))to.ry() = pos.y() - object->boundingRect().height();
-    else if(flags.contains("ym"))to.ry() = pos.y() - object->boundingRect().height()/2;
+        if(autoShowDiscards) autoUpdateDiscards();
 
-    object->setPos(to);
+    }else if(dest->objectName() == Self->objectName()){
+        switch(dest_place){
+        case Player::Equip:{
+                dashboard->installEquip(card_item);
+                break;
+            }
+
+        case Player::Hand:{
+                dashboard->addCardItem(card_item);
+                break;
+            }
+
+        case Player::Judging:{
+                dashboard->installDelayedTrick(card_item);
+                break;
+            }
+
+        case Player::Special:{
+                card_item->setHomePos(avatar->scenePos());
+                card_item->goBack(true);
+            }
+
+        default:
+            ;
+            // FIXME
+        }
+    }else{
+        Photo *photo = name2photo.value(dest->objectName(), NULL);
+        if(photo){
+            switch(dest_place){
+            case Player::Equip:
+                photo->installEquip(card_item);
+                break;
+            case Player::Hand:
+                photo->addCardItem(card_item);
+                break;
+            case Player::Judging:
+                photo->installDelayedTrick(card_item);
+                break;
+            case Player::Special:
+                card_item->setHomePos(photo->pos());
+                card_item->goBack(true);
+                break;
+            default:
+                ;
+            }
+        }
+
+        photo->update();
+    }
 }

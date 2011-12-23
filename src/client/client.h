@@ -167,6 +167,9 @@ public:
     QStringList players_to_choose;   
 
 public slots:
+    void createroom();
+    void joinroom(int roomid);
+    void rejoinroom(int roomid); // 20111220
     void signup();
     void chooseItem(const QString &_name);
     void selectChoice();

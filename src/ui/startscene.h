@@ -23,6 +23,7 @@ private:
 
     Pixmap *logo;
     QTextEdit *server_log;
+    QLineEdit *server_cmdline; //20111220
     QList<Button*> buttons;
 };
 

@@ -237,12 +237,27 @@ public:
 
     virtual int getCorrect(const Player *from, const Player *to) const{
         int correct = 0;
-        if(from->hasSkill(objectName()) && from->getHp() > 2)
+        if(from->hasSkill(objectName()) && !from->getMark("@duanchang") > 0 && from->getHp() > 2)
             correct --;
-        if(to->hasSkill(objectName()) && to->getHp() <= 2)
+        if(to->hasSkill(objectName()) && !to->getMark("@duanchang") > 0 && to->getHp() <= 2)
             correct ++;
 
         return correct;
+    }
+};
+
+class YicongEnd:public MasochismSkill{
+public:
+    YicongEnd():MasochismSkill("#yicong-end"){
+    }
+
+    virtual void onDamaged(ServerPlayer *gongsunzan, const DamageStruct &damage) const{
+        Room *room = gongsunzan->getRoom();
+        if(gongsunzan->getHp() > 2)
+            room->playSkillEffect("yicong",1);
+
+        if(gongsunzan->getHp() <= 2)
+            room->playSkillEffect("yicong",2);
     }
 };
 
@@ -281,25 +296,19 @@ public:
     }
 
     virtual bool onPhaseChange(ServerPlayer *target) const{
-        bool once_success = false;
-        do{
-            once_success = false;
+        if(!target->askForSkillInvoke(objectName()))
+            return false;
 
-            if(!target->askForSkillInvoke(objectName()))
-                return false;
+        Room *room = target->getRoom();
+        int card_id = room->askForCardChosen(target, target, "j", objectName());
+        const Card *card = Sanguosha->getCard(card_id);
 
-            Room *room = target->getRoom();
-            int card_id = room->askForCardChosen(target, target, "j", objectName());
-            const Card *card = Sanguosha->getCard(card_id);
-
-            QString suit_str = card->getSuitString();
-            QString pattern = QString(".%1").arg(suit_str.at(0).toUpper());
-            QString prompt = QString("@xiuluo:::%1").arg(suit_str);
-            if(room->askForCard(target, pattern, prompt)){
-                room->throwCard(card);
-                once_success = true;
-            }
-        }while(!target->getCards("j").isEmpty() && once_success);
+        QString suit_str = card->getSuitString();
+        QString pattern = QString(".%1").arg(suit_str.at(0).toUpper());
+        QString prompt = QString("@xiuluo:::%1").arg(suit_str);
+        if(room->askForCard(target, pattern, prompt)){
+            room->throwCard(card);
+        }
 
         return false;
     }
@@ -372,6 +381,9 @@ SPPackage::SPPackage()
 
     General *gongsunzan = new General(this, "gongsunzan", "qun");
     gongsunzan->addSkill(new Yicong);
+    gongsunzan->addSkill(new YicongEnd);
+
+    related_skills.insertMulti("yicong", "#yicong-end");
 
     General *yuanshu = new General(this, "yuanshu", "qun");
     yuanshu->addSkill(new Yongsi);
@@ -380,26 +392,18 @@ SPPackage::SPPackage()
     General *sp_diaochan = new General(this, "sp_diaochan", "qun", 3, false, true);
     sp_diaochan->addSkill("lijian");
     sp_diaochan->addSkill("biyue");
-    sp_diaochan->addSkill(new Xuwei);
 
     General *sp_sunshangxiang = new General(this, "sp_sunshangxiang", "shu", 3, false, true);
     sp_sunshangxiang->addSkill("jieyin");
     sp_sunshangxiang->addSkill("xiaoji");
 
-    General *shenlvbu1 = new General(this, "shenlvbu1", "god", 8, true, true);
-    shenlvbu1->addSkill("mashu");
-    shenlvbu1->addSkill("wushuang");
-
-    General *shenlvbu2 = new General(this, "shenlvbu2", "god", 4, true, true);
-    shenlvbu2->addSkill("mashu");
-    shenlvbu2->addSkill("wushuang");
-    shenlvbu2->addSkill(new Xiuluo);
-    shenlvbu2->addSkill(new Shenwei);
-    shenlvbu2->addSkill(new Skill("shenji"));
-
-    General *sp_guanyu = new General(this, "sp_guanyu", "wei", 4);
+    General *sp_guanyu = new General(this, "sp_guanyu", "wei", 4, true, true);
     sp_guanyu->addSkill("wusheng");
     sp_guanyu->addSkill(new Danji);
+
+    General *sp_pangde = new General(this, "sp_pangde", "wei", 4, true, true);
+    sp_pangde->addSkill("mengjin");
+    sp_pangde->addSkill("mashu");
 
     General *sp_caiwenji = new General(this, "sp_caiwenji", "wei", 3, false, true);
     sp_caiwenji->addSkill("beige");
@@ -414,6 +418,25 @@ SPPackage::SPPackage()
     sp_jiaxu->addSkill("luanwu");
     sp_jiaxu->addSkill("weimu");
     sp_jiaxu->addSkill("#@chaos-1");
+
+    General *sp_simayi = new General(this, "sp_simayi", "wei", 3, true, true);
+    sp_simayi->addSkill("guicai");
+    sp_simayi->addSkill("fankui");
+
+    General *sp_jiangwei = new General(this, "sp_jiangwei", "wei", 4, true, true);
+    sp_jiangwei->addSkill("tiaoxin");
+    sp_jiangwei->addSkill("zhiji");
+
+    General *shenlvbu1 = new General(this, "shenlvbu1", "god", 8, true, true);
+    shenlvbu1->addSkill("mashu");
+    shenlvbu1->addSkill("wushuang");
+
+    General *shenlvbu2 = new General(this, "shenlvbu2", "god", 4, true, true);
+    shenlvbu2->addSkill("mashu");
+    shenlvbu2->addSkill("wushuang");
+    shenlvbu2->addSkill(new Xiuluo);
+    shenlvbu2->addSkill(new Shenwei);
+    shenlvbu2->addSkill(new Skill("shenji"));
 }
 
 ADD_PACKAGE(SP);

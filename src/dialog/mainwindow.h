@@ -4,6 +4,7 @@
 #include "engine.h"
 #include "connectiondialog.h"
 #include "configdialog.h"
+#include "halldialog.h"
 
 #include <QMainWindow>
 #include <QSettings>
@@ -72,7 +73,7 @@ private:
     ConnectionDialog *connection_dialog;
     ConfigDialog *config_dialog;
     QSystemTrayIcon *systray;
-
+    HallDialog *hall_dialog;
     void restoreFromConfig();
 
 private slots:
@@ -106,6 +107,20 @@ private slots:
     void gotoScene(QGraphicsScene *scene);
     void startGameInAnotherInstance();
     void changeBackground();
+
+    // 20111218 by highlandz
+    void startQNodeList(QString addr, int port);
+    void startQNodeInfo(QString addr, int port);
+    void process_socket_Reply(char*);
+    void process_socket_error_message();
+    void refreshRooms();
+    void startCreateRoom();
+    void startJoinRoom(int roomid);
+    void startReJoinRoom(int roomid);
+signals:
+    void nodelistupdate(QString);
+    void roomlistupdate(QString);
+    void rejoin_room(int); // 20111220
 };
 
 #endif // MAINWINDOW_H

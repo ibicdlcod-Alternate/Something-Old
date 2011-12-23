@@ -62,6 +62,7 @@ class ServerDialog: public QDialog{
 public:
     ServerDialog(QWidget *parent);
     void ensureEnableAI();
+    void ensureDisableAnnounceIP();
     bool config();
 
 private:
@@ -92,6 +93,10 @@ private:
     QList<QLabel *> challenge_avatars;
     QLineEdit *address_edit;
     QLineEdit *port_edit;
+
+    QLineEdit *node_address_edit;
+    QLineEdit *node_port_edit;
+
     QCheckBox *ai_enable_checkbox;
     QCheckBox *role_predictable_checkbox;
     QCheckBox *ai_chat_checkbox;
@@ -128,6 +133,9 @@ public:
     void signupPlayer(ServerPlayer *player);
 
 private:
+    QHash<QString, long> nodeList; // 20111218
+    ClientSocket *ssclient; // 20111218 Server Side Client
+
     ServerSocket *server;
     Room *current;
     QSet<Room *> rooms;
@@ -140,9 +148,18 @@ private slots:
     void processRequest(char *request);
     void cleanup();
     void gameOver();
+    // 20111220
+    void roomFinished();
+    // 20111218
+    void process_SS_Reply(char *reply);
+    void process_SS_error_message(QString);
+    void timerTrigger();
+    //20111220
+    void processCmdLine();
 
 signals:
     void server_message(const QString &);
+    void clearlog(); // 20111220
 };
 
 #endif // SERVER_H

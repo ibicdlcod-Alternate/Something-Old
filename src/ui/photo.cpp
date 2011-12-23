@@ -19,8 +19,6 @@
 #include <QPushButton>
 #include <QMenu>
 
-#include "pixmapanimation.h"
-
 Photo::Photo()
     :Pixmap("image/system/photo-back.png"),
     player(NULL),
@@ -164,16 +162,6 @@ void Photo::setEmotion(const QString &emotion, bool permanent){
 
     if(!permanent)
         QTimer::singleShot(2000, this, SLOT(hideEmotion()));
-
-    PixmapAnimation *pma = new PixmapAnimation();
-    pma->setPath(QString("image/system/emotion/%1/").arg(emotion));
-    if(pma->valid())
-    {
-        pma->setParentItem(this);
-        pma->startTimer(50);
-        connect(pma,SIGNAL(finished()),pma,SLOT(deleteLater()));
-    }
-    else delete pma;
 }
 
 void Photo::tremble(){
@@ -248,6 +236,7 @@ void Photo::setPlayer(const ClientPlayer *player)
         connect(player, SIGNAL(action_taken()), this, SLOT(setActionState()));
         connect(player, SIGNAL(pile_changed(QString)), this, SLOT(updatePile(QString)));
 
+
         mark_item->setDocument(player->getMarkDoc());
     }
 
@@ -304,8 +293,6 @@ void Photo::updateAvatar(){
 
         avatar_area->setToolTip(QString());
         small_avatar_area->setToolTip(QString());
-
-        ready_item->hide();
     }
 
     hide_avatar = false;
@@ -660,16 +647,41 @@ void Photo::drawEquip(QPainter *painter, CardItem *equip, int order){
     if(!equip)
         return;
 
-    QRect suit_rect(2, 104 + 15 + order * 17, 13, 13);
-    painter->drawPixmap(suit_rect, equip->getSuitPixmap());
+    static const int width = 131;
+    static const int height = 18;
+    static const int start_x = 8;
+    static const int start_y = 115;
+
+    int y = start_y + order * 17;
 
     const EquipCard *card = qobject_cast<const EquipCard *>(equip->getCard());
     painter->setPen(Qt::black);
-    QFont bold_font;
-    bold_font.setBold(true);
-    painter->setFont(bold_font);
-    painter->drawText(20, 115 + 15 + order * 17, card->getNumberString());
-    painter->drawText(35, 115 + 15 + order * 17, card->label());
+
+    QString path = QString("image/equips-small/%1.png").arg(card->objectName());
+    QPixmap *label = new QPixmap(path);
+
+    if(label->isNull())
+    {
+        painter->setPen(Qt::white);
+        QString text = QString("%1").arg(card->label());
+        painter->drawText(1, y + 20, text);
+    }else
+    {
+        QFont font("Algerian",12);
+        font.setBold(true);
+        painter->setFont(font);
+        painter->drawPixmap(1,y + 2,label->width(),label->height(),*label);
+    }
+
+    QRect suit_rect(width - 24, y + 5, 10, 10);
+    painter->drawPixmap(suit_rect, equip->getSuitPixmap());
+
+    painter->drawText(width - 14,y + 16,QString("%1").arg(card->getNumberString()));
+
+    painter->setPen(Qt::white);
+    if(equip->isMarked()){
+        painter->drawRect(start_x, y , width, height);
+    }
 }
 
 QVariant Photo::itemChange(GraphicsItemChange change, const QVariant &value){

@@ -109,8 +109,8 @@ HongyanScenario::HongyanScenario()
     :Scenario("hongyan_lesbian")
 {
     females << "zhenji" << "huangyueying" << "zhurong"
-            << "daqiao" << "luxun" << "xiaoqiao"
-            << "diaochan" << "caizhaoji" << "sunshangxiang";
+            << "daqiao" << "zhangchunhua" << "xiaoqiao"
+            << "diaochan" << "caiwenji" << "sunshangxiang";
 
     standard_roles << "lord" << "loyalist" << "loyalist"
             << "rebel" << "rebel" << "rebel" << "rebel" << "renegade";

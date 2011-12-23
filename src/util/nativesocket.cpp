@@ -70,6 +70,10 @@ void NativeClientSocket::connectToHost(){
     socket->connectToHost(Config.HostAddress, Config.ServerPort);
 }
 
+void NativeClientSocket::connectToNode(QString addr, int port){
+    socket->connectToHost(addr, port);
+}
+
 void NativeClientSocket::getMessage(){
     while(socket->canReadLine()){
         buffer_t msg;

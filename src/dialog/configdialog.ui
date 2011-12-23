@@ -26,7 +26,7 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>3</number>
    </property>
    <widget class="QWidget" name="envTab">
     <attribute name="title">
@@ -38,22 +38,22 @@
        <x>10</x>
        <y>140</y>
        <width>441</width>
-       <height>171</height>
+       <height>181</height>
       </rect>
      </property>
      <property name="title">
       <string>Audio</string>
      </property>
-     <widget class="QWidget" name="layoutWidget1">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>30</y>
+        <y>20</y>
         <width>421</width>
-        <height>71</height>
+        <height>73</height>
        </rect>
       </property>
-      <layout class="QVBoxLayout" name="verticalLayout_5">
+      <layout class="QVBoxLayout" name="AudioChooseVLayout">
        <item>
         <widget class="QLabel" name="setupBgMusicLabel">
          <property name="text">
@@ -104,16 +104,16 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="layoutWidget2">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>110</y>
-        <width>421</width>
-        <height>18</height>
+        <y>100</y>
+        <width>424</width>
+        <height>19</height>
        </rect>
       </property>
-      <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <layout class="QHBoxLayout" name="CheckBoxHLayout">
        <item>
         <widget class="QCheckBox" name="enableEffectCheckBox">
          <property name="text">
@@ -143,36 +143,94 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="layoutWidget3">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>140</y>
-        <width>411</width>
-        <height>21</height>
+        <y>120</y>
+        <width>301</width>
+        <height>54</height>
        </rect>
       </property>
-      <layout class="QHBoxLayout" name="horizontalLayout_5">
+      <layout class="QVBoxLayout" name="VolumeVLayout">
        <item>
-        <widget class="QLabel" name="volumeLabel">
+        <layout class="QHBoxLayout" name="EffectHLayout">
+         <item>
+          <widget class="QLabel" name="volumeLable_Effect">
+           <property name="text">
+            <string>Effects Volume</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSlider" name="volumeSlider_Effect">
+           <property name="maximum">
+            <number>100</number>
+           </property>
+           <property name="value">
+            <number>100</number>
+           </property>
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="BgmHLayout">
+         <item>
+          <widget class="QLabel" name="volumeLable_Bgm">
+           <property name="text">
+            <string>BGMusic Volume</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSlider" name="volumeSlider_Bgm">
+           <property name="maximum">
+            <number>100</number>
+           </property>
+           <property name="value">
+            <number>100</number>
+           </property>
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="verticalLayoutWidget">
+      <property name="geometry">
+       <rect>
+        <x>320</x>
+        <y>120</y>
+        <width>111</width>
+        <height>65</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="EditionVLayout">
+       <item>
+        <widget class="QRadioButton" name="classicalRdo">
          <property name="text">
-          <string>Volume</string>
-         </property>
-         <property name="buddy">
-          <cstring>volumeSlider</cstring>
+          <string>Classical</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QSlider" name="volumeSlider">
-         <property name="maximum">
-          <number>100</number>
+        <widget class="QRadioButton" name="professional1Rdo">
+         <property name="text">
+          <string>Professional1</string>
          </property>
-         <property name="value">
-          <number>100</number>
-         </property>
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="professional2Rdo">
+         <property name="text">
+          <string>Professional2</string>
          </property>
         </widget>
        </item>
@@ -191,13 +249,13 @@
      <property name="title">
       <string>Background</string>
      </property>
-     <widget class="QWidget" name="layoutWidget4">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>10</x>
         <y>20</y>
         <width>421</width>
-        <height>73</height>
+        <height>75</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -260,7 +318,7 @@
        <rect>
         <x>10</x>
         <y>100</y>
-        <width>151</width>
+        <width>121</width>
         <height>16</height>
        </rect>
       </property>
@@ -271,7 +329,7 @@
      <widget class="QCheckBox" name="circularViewCheckBox">
       <property name="geometry">
        <rect>
-        <x>160</x>
+        <x>130</x>
         <y>100</y>
         <width>101</width>
         <height>16</height>
@@ -279,6 +337,19 @@
       </property>
       <property name="text">
        <string>Circular view</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="enableLogBgCheckBox">
+      <property name="geometry">
+       <rect>
+        <x>230</x>
+        <y>100</y>
+        <width>101</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Log image</string>
       </property>
      </widget>
      <widget class="QCheckBox" name="noIndicatorCheckBox">
@@ -299,27 +370,14 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>320</y>
+       <y>330</y>
        <width>441</width>
-       <height>91</height>
+       <height>81</height>
       </rect>
      </property>
      <property name="title">
       <string>Font setup</string>
      </property>
-     <widget class="QPushButton" name="changeAppFontButton">
-      <property name="geometry">
-       <rect>
-        <x>270</x>
-        <y>20</y>
-        <width>161</width>
-        <height>23</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Set application font</string>
-      </property>
-     </widget>
      <widget class="QLabel" name="appFontLabel">
       <property name="geometry">
        <rect>
@@ -342,7 +400,7 @@
       </property>
       <property name="geometry">
        <rect>
-        <x>124</x>
+        <x>120</x>
         <y>23</y>
         <width>131</width>
         <height>20</height>
@@ -368,19 +426,6 @@
        <bool>false</bool>
       </property>
      </widget>
-     <widget class="QPushButton" name="setTextEditFontButton">
-      <property name="geometry">
-       <rect>
-        <x>270</x>
-        <y>50</y>
-        <width>71</width>
-        <height>23</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Font ...</string>
-      </property>
-     </widget>
      <widget class="QLabel" name="textEditFontLabel">
       <property name="geometry">
        <rect>
@@ -397,31 +442,55 @@
        <cstring>textEditFontLineEdit</cstring>
       </property>
      </widget>
-     <widget class="QPushButton" name="setTextEditColorButton">
-      <property name="geometry">
-       <rect>
-        <x>350</x>
-        <y>50</y>
-        <width>75</width>
-        <height>23</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Color ...</string>
-      </property>
-     </widget>
+    </widget>
+    <widget class="QWidget" name="verticalLayoutWidget_2">
+     <property name="geometry">
+      <rect>
+       <x>270</x>
+       <y>350</y>
+       <width>164</width>
+       <height>60</height>
+      </rect>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_3">
+      <item>
+       <widget class="QPushButton" name="changeAppFontButton">
+        <property name="text">
+         <string>Set application font</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <item>
+         <widget class="QPushButton" name="setTextEditFontButton">
+          <property name="text">
+           <string>Font ...</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="setTextEditColorButton">
+          <property name="text">
+           <string>Color ...</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
     </widget>
    </widget>
    <widget class="QWidget" name="gameTab">
     <attribute name="title">
      <string>Game</string>
     </attribute>
-    <widget class="QWidget" name="layoutWidget5">
+    <widget class="QWidget" name="layoutWidget">
      <property name="geometry">
       <rect>
        <x>10</x>
        <y>20</y>
-       <width>236</width>
+       <width>240</width>
        <height>22</height>
       </rect>
      </property>
@@ -560,6 +629,300 @@
      </property>
     </widget>
    </widget>
+   <widget class="QWidget" name="tab_2">
+    <attribute name="title">
+     <string>Custom Scene</string>
+    </attribute>
+    <widget class="QLabel" name="scenePixmap">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>0</y>
+       <width>460</width>
+       <height>280</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="pixmap">
+      <pixmap resource="../../QSanguosha.qrc">:/image/system/scene.jpg</pixmap>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="photoPos1LineEdit">
+     <property name="geometry">
+      <rect>
+       <x>165</x>
+       <y>60</y>
+       <width>40</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>x,y</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="photoPos2LineEdit">
+     <property name="geometry">
+      <rect>
+       <x>115</x>
+       <y>60</y>
+       <width>40</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>x,y</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="photoPos3LineEdit">
+     <property name="geometry">
+      <rect>
+       <x>60</x>
+       <y>60</y>
+       <width>40</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>x,y</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="photoPos4LineEdit">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>80</y>
+       <width>40</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>x,y</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="photoPos5LineEdit">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>150</y>
+       <width>40</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>x,y</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="stateItemLineEdit">
+     <property name="geometry">
+      <rect>
+       <x>370</x>
+       <y>30</y>
+       <width>60</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>x,y</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="chatBoxLineEdit">
+     <property name="geometry">
+      <rect>
+       <x>370</x>
+       <y>90</y>
+       <width>80</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>x,y,w,h</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="logBoxLineEdit">
+     <property name="geometry">
+      <rect>
+       <x>370</x>
+       <y>150</y>
+       <width>80</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>x,y,w,h</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="drawPilePosLineEdit">
+     <property name="geometry">
+      <rect>
+       <x>140</x>
+       <y>130</y>
+       <width>31</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>x,y</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="discardedPosLineEdit">
+     <property name="geometry">
+      <rect>
+       <x>180</x>
+       <y>130</y>
+       <width>31</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>x,y</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="discardedAreaLineEdit">
+     <property name="geometry">
+      <rect>
+       <x>62</x>
+       <y>170</y>
+       <width>241</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>y,w,n</string>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="enableCustomSceneCheckBox">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>290</y>
+       <width>161</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Enable Custom Scene</string>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="autoShowDiscardsCheckBox">
+     <property name="geometry">
+      <rect>
+       <x>190</x>
+       <y>290</y>
+       <width>141</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Auto Show Discards</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>320</y>
+       <width>101</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Indicator Width:</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="indicatorWidthLineEdit">
+     <property name="geometry">
+      <rect>
+       <x>110</x>
+       <y>320</y>
+       <width>113</width>
+       <height>20</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_2">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>350</y>
+       <width>121</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Indicator Duration:</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="indicatorDurationLineEdit">
+     <property name="geometry">
+      <rect>
+       <x>130</x>
+       <y>350</y>
+       <width>91</width>
+       <height>20</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="cv1024x768Button">
+     <property name="geometry">
+      <rect>
+       <x>260</x>
+       <y>220</y>
+       <width>151</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Circular view 1024x768</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="nv1024x768Button">
+     <property name="geometry">
+      <rect>
+       <x>260</x>
+       <y>240</y>
+       <width>151</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Normal view 1024x768</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="cv1366x768Button">
+     <property name="geometry">
+      <rect>
+       <x>100</x>
+       <y>220</y>
+       <width>151</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Circular view 1366x768</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="nv1366x768Button">
+     <property name="geometry">
+      <rect>
+       <x>100</x>
+       <y>240</y>
+       <width>151</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Normal view 1366x768</string>
+     </property>
+    </widget>
+   </widget>
   </widget>
   <widget class="QDialogButtonBox" name="buttonBox">
    <property name="geometry">
@@ -578,7 +941,9 @@
    </property>
   </widget>
  </widget>
- <resources/>
+ <resources>
+  <include location="../../QSanguosha.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>buttonBox</sender>

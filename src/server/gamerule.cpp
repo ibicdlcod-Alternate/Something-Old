@@ -212,7 +212,7 @@ bool GameRule::trigger(TriggerEvent event, ServerPlayer *player, QVariant &data)
     case HpLost:{
             int lose = data.toInt();
 
-            if(room->getCurrent()->hasSkill("jueqing"))
+            if(room->getCurrent()->hasSkill("j"))
                 return true;
 
             LogMessage log;
@@ -238,7 +238,7 @@ bool GameRule::trigger(TriggerEvent event, ServerPlayer *player, QVariant &data)
 
             QList<ServerPlayer *> savers;
             ServerPlayer *current = room->getCurrent();
-            if(current->hasSkill("wansha") && current->isAlive()){
+            if(current->hasSkill("wansha") && !current->hasFlag("baiban") && current->isAlive()){
                 room->playSkillEffect("wansha");
 
                 savers << current;
@@ -400,7 +400,7 @@ bool GameRule::trigger(TriggerEvent event, ServerPlayer *player, QVariant &data)
             if(effect.drank)
                 damage.damage ++;
 
-            if(effect.to->hasSkill("jueqing") || effect.to->getGeneralName() == "zhangchunhua")
+            if(effect.to->hasSkill("j") || effect.to->getGeneralName() == "z")
                 damage.damage ++;
 
             damage.from = effect.from;
@@ -447,7 +447,18 @@ bool GameRule::trigger(TriggerEvent event, ServerPlayer *player, QVariant &data)
             DamageStar damage = data.value<DamageStar>();
             ServerPlayer *killer = damage ? damage->from : NULL;
             if(killer){
-                rewardAndPunish(killer, player);
+                if(player->hasSkill("baojie")){
+                    LogMessage log;
+                    log.type = "#Baojie";
+                    log.from = player;
+                    log.to << killer;
+                    log.arg = "baojie";
+                    room->playSkillEffect("baojie");
+                    room->setEmotion(player, "baojie");
+                    room->sendLog(log);
+                }
+                else
+                    rewardAndPunish(killer, player);
             }
 
             setGameProcess(room);

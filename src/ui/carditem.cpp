@@ -10,11 +10,9 @@
 #include <QFocusEvent>
 #include <QParallelAnimationGroup>
 #include <QPropertyAnimation>
-#include <QGraphicsDropShadowEffect>
 
 CardItem::CardItem(const Card *card)
-    :Pixmap(card->getPixmapPath(), false), card(card), filtered_card(card), auto_back(true),
-      is_pending(false)
+    :Pixmap(card->getPixmapPath(), false), card(card), filtered_card(card), auto_back(true)
 {
     Q_ASSERT(card != NULL);
 
@@ -23,7 +21,6 @@ CardItem::CardItem(const Card *card)
     setTransformOriginPoint(pixmap.width()/2, pixmap.height()/2);
 
     setToolTip(card->getDescription());
-    setAcceptHoverEvents(true);
 
     QPixmap frame_pixmap("image/system/frame/good.png");
     frame = new QGraphicsPixmapItem(frame_pixmap, this);
@@ -34,7 +31,7 @@ CardItem::CardItem(const Card *card)
 }
 
 CardItem::CardItem(const QString &general_name)
-    :card(NULL), filtered_card(NULL), auto_back(true), is_pending(false)
+    :card(NULL), filtered_card(NULL), auto_back(true)
 {
     changeGeneral(general_name);
 }
@@ -76,7 +73,7 @@ QPointF CardItem::homePos() const{
     return home_pos;
 }
 
-void CardItem::goBack(bool kieru,bool fadein,bool fadeout){
+void CardItem::goBack(bool kieru){
     if(home_pos == pos()){
         if(kieru)
             setOpacity(0.0);
@@ -85,33 +82,20 @@ void CardItem::goBack(bool kieru,bool fadein,bool fadeout){
 
     QPropertyAnimation *goback = new QPropertyAnimation(this, "pos");
     goback->setEndValue(home_pos);
-    goback->setEasingCurve(QEasingCurve::OutQuad);
-    goback->setDuration(300);
+    goback->setEasingCurve(QEasingCurve::OutQuart);
+    goback->setDuration(800);
 
     if(kieru){
         QParallelAnimationGroup *group = new QParallelAnimationGroup;
 
         QPropertyAnimation *disappear = new QPropertyAnimation(this, "opacity");
-        if(fadein)disappear->setStartValue(0.0);
-        disappear->setEndValue(1.0);
-        if(fadeout)disappear->setEndValue(0.0);
-
+        disappear->setStartValue(0.0);
         disappear->setKeyValueAt(0.2, 1.0);
         disappear->setKeyValueAt(0.8, 1.0);
+        disappear->setEndValue(0.0);
 
-
-        int dx = home_pos.x()-pos().x();
-        int dy = home_pos.y()-pos().y();
-        int length = sqrt(dx*dx+dy*dy);
-
-
-        if(length*3>500)disappear->setStartValue(0.0);
-        else length = 500/3;
-
-        if(length*3>1200)length =400;
-
-        goback->setDuration(length*3);
-        disappear->setDuration(length*3);
+        goback->setDuration(1000);
+        disappear->setDuration(1000);
 
         group->addAnimation(goback);
         group->addAnimation(disappear);
@@ -173,10 +157,8 @@ void CardItem::select(){
         frame->show();
     else{
         home_pos.setY(PendingY);
-        //setY(PendingY);
-        if(!hasFocus())goBack();
+        setY(PendingY);
     }
-    is_pending = true;
 }
 
 void CardItem::unselect(){
@@ -184,15 +166,15 @@ void CardItem::unselect(){
         frame->hide();
     else{
         home_pos.setY(NormalY);
-        //setY(NormalY);
-        if(!hasFocus())goBack();
+        setY(NormalY);
     }
-
-    is_pending = false;
 }
 
 bool CardItem::isPending() const{
-    return is_pending;
+    if(IsMultilayer())
+        return frame->isVisible();
+    else
+        return home_pos.y() == PendingY;
 }
 
 bool CardItem::isEquipped() const{
@@ -226,7 +208,6 @@ void CardItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *){
     }else{
         emit released();
     }
-    emit leave_hover();
 }
 
 void CardItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event){
@@ -243,29 +224,40 @@ void CardItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event){
     }
 }
 
-void CardItem::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
-{
-    emit enter_hover();
-}
-
-void CardItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
-{
-    emit leave_hover();
-}
-
 void CardItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget){
     Pixmap::paint(painter, option, widget);
 
     if(card){
-        static QFont card_number_font("Times", 10, QFont::Bold);
-        painter->drawPixmap(8, 20, 10, 10, suit_pixmap);
+        static QFont card_number_font("Times", 20, QFont::Bold);
+        painter->drawPixmap(8, 8, 18, 18, suit_pixmap);
 
         painter->setFont(card_number_font);
         if(card->isRed())
             painter->setPen(Qt::red);
         else
             painter->setPen(Qt::black);
-        painter->drawText(9, 18, card->getNumberString());
+        painter->drawText(8, 50, card->getNumberString());
     }
 }
 
+// 20111218 by Highlandz write desc on card
+void CardItem::writeCardDesc(QString strInfo)
+{
+     if(card){
+         int x,y;
+         x=(93-strInfo.toLocal8Bit().length()*6)/2;
+         y=115;
+         QPainter painter(&pixmap);
+         static QFont card_desc_font("SimSun", 9, QFont::Normal);
+         painter.setFont(card_desc_font);
+         painter.setPen(Qt::black);
+
+         painter.drawText(x, y-1, strInfo);
+         painter.drawText(x, y+1, strInfo);
+         painter.drawText(x-1, y, strInfo);
+         painter.drawText(x+1, y, strInfo);
+
+         painter.setPen(Qt::yellow);
+         painter.drawText(x, y, strInfo);
+     }
+}

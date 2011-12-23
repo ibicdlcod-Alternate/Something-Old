@@ -20,6 +20,10 @@ private:
     void showFont(QLineEdit *lineedit, const QFont &font);
 
 private slots:
+    void on_nv1366x768Button_clicked();
+    void on_cv1366x768Button_clicked();
+    void on_nv1024x768Button_clicked();
+    void on_cv1024x768Button_clicked();
     void on_setTextEditColorButton_clicked();
     void on_setTextEditFontButton_clicked();
     void on_changeAppFontButton_clicked();

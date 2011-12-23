@@ -30,6 +30,7 @@ void LeijiCard::onEffect(const CardEffectStruct &effect) const{
     ServerPlayer *target = effect.to;
 
     Room *room = zhangjiao->getRoom();
+    room->setEmotion(zhangjiao, "leiji");
     room->setEmotion(target, "bad");
 
     JudgeStruct judge;
@@ -48,7 +49,17 @@ void LeijiCard::onEffect(const CardEffectStruct &effect) const{
         damage.to = target;
         damage.nature = DamageStruct::Thunder;
 
-        room->damage(damage);
+        if(damage.from->hasSkill("jueqing")){
+            LogMessage log;
+            log.type = "#Jueqing";
+            log.from = damage.from;
+            log.to << damage.to;
+            log.arg = QString::number(1);
+            room->sendLog(log);
+            room->loseHp(damage.to, 2);
+        }else{
+            room->damage(damage);
+        }
     }else
         room->setEmotion(zhangjiao, "bad");
 }
@@ -59,9 +70,9 @@ HuangtianCard::HuangtianCard(){
 
 void HuangtianCard::use(Room *room, ServerPlayer *, const QList<ServerPlayer *> &targets) const{
     ServerPlayer *zhangjiao = targets.first();
-    if(zhangjiao->hasLordSkill("huangtian")){
+    if(zhangjiao->hasSkill("huangtian")){
         zhangjiao->obtainCard(this);
-        room->setEmotion(zhangjiao, "good");
+        room->setEmotion(zhangjiao, "huangtian");
     }
 }
 
@@ -137,6 +148,7 @@ public:
 
         if(card){
             // the only difference for Guicai & Guidao
+            room->setEmotion(player, "guidao");
             player->obtainCard(judge->card);
 
             judge->card = Sanguosha->getCard(card->getEffectiveId());
@@ -251,6 +263,7 @@ bool ShensuCard::targetFilter(const QList<const Player *> &targets, const Player
 
 void ShensuCard::use(Room *room, ServerPlayer *source, const QList<ServerPlayer *> &targets) const{
     room->throwCard(this);
+    room->setEmotion(source, "shensu");
 
     Slash *slash = new Slash(Card::NoSuit, 0);
     slash->setSkillName("shensu");
@@ -338,6 +351,7 @@ public:
                 target->turnOver();
 
                 room->playSkillEffect(objectName());
+                room->setEmotion(target, "jushou");
             }
         }
 
@@ -361,6 +375,7 @@ public:
         if(num >= huangzhong->getHp() || num <= huangzhong->getAttackRange()){
             if(huangzhong->askForSkillInvoke(objectName(), QVariant::fromValue(effect))){
                 room->playSkillEffect(objectName());
+                room->setEmotion(huangzhong, "liegong");
                 room->slashResult(effect, NULL);
 
                 return true;
@@ -394,6 +409,7 @@ public:
                 Room *room = player->getRoom();
 
                 room->playSkillEffect(objectName());
+                room->setEmotion(player, "kuanggu");
 
                 LogMessage log;
                 log.type = "#TriggerSkill";
@@ -500,6 +516,7 @@ public:
                 QString choice = room->askForChoice(zhoutai, objectName(), "alive+dead");
                 if(choice == "alive"){
                     room->playSkillEffect(objectName());
+                    room->setEmotion(zhoutai, "buqu");
                     return true;
                 }
             }else{
@@ -596,6 +613,7 @@ TianxiangCard::TianxiangCard()
 
 void TianxiangCard::onEffect(const CardEffectStruct &effect) const{
     Room *room = effect.to->getRoom();
+    room->setEmotion(effect.from, "tianxiang");
     DamageStruct damage = effect.from->tag["TianxiangDamage"].value<DamageStruct>();
     damage.to = effect.to;
     damage.chain = true;
@@ -873,6 +891,7 @@ bool GuhuoCard::targetsFeasible(const QList<const Player *> &targets, const Play
 const Card *GuhuoCard::validate(const CardUseStruct *card_use) const{
     Room *room = card_use->from->getRoom();
     room->playSkillEffect("guhuo");
+    room->setEmotion(card_use->from, "guhuo");
 
     LogMessage log;
     log.type = card_use->to.isEmpty() ? "#GuhuoNoTarget" : "#Guhuo";

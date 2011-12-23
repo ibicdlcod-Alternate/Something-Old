@@ -123,7 +123,7 @@ void ServerPlayer::drawCards(int n, bool set_emotion){
     room->drawCards(this, n);
 
     if(set_emotion)
-        room->setEmotion(this, "draw-card");
+        room->broadcastInvoke("animate", QString("draw-card:%1").arg(this->objectName()));
 }
 
 // a convenient way to ask player
@@ -372,17 +372,17 @@ DummyCard *ServerPlayer::wholeHandCards() const{
 }
 
 bool ServerPlayer::hasNullification() const{
-    if(hasSkill("kanpo")){
+    if(hasSkill("kanpo") && !hasFlag("baiban")){
         foreach(const Card *card, handcards){
             if(card->isBlack() || card->objectName() == "nullification")
                 return true;
         }
-    }else if(hasSkill("wushen")){
+    }else if(hasSkill("wushen") && !hasFlag("baiban")){
         foreach(const Card *card, handcards){
             if(card->objectName() == "nullification" && card->getSuit() != Card::Heart)
                 return true;
         }
-    }else if(hasSkill("guhuo")){
+    }else if(hasSkill("guhuo") && !hasFlag("baiban")){
         return !isKongcheng();
     }else if(hasFlag("lexue")){
         int card_id = getMark("lexue");
@@ -646,9 +646,6 @@ void ServerPlayer::introduceTo(ServerPlayer *player){
         player->invoke("addPlayer", introduce_str);
     else
         room->broadcastInvoke("addPlayer", introduce_str, this);
-
-    if(isReady())
-        room->broadcastProperty(this, "ready");
 }
 
 void ServerPlayer::marshal(ServerPlayer *player) const{

@@ -22,7 +22,7 @@ HallDialog::HallDialog(MainWindow *main_window)
     :QDialog(main_window), main_window(main_window), room_row(0)
 {
     setWindowTitle(tr("Hall"));
-    setMinimumSize(434, 432);
+    setMinimumSize(454, 452);
 
     HallDialogInstance = this;
 
@@ -30,15 +30,21 @@ HallDialog::HallDialog(MainWindow *main_window)
     table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     table->setSelectionBehavior(QAbstractItemView::SelectRows);
     table->setSelectionMode(QAbstractItemView::SingleSelection);
-    table->setColumnCount(3);
+    table->setColumnCount(4);
+    table->setColumnWidth(0,60);
+    table->setColumnWidth(1,200);
+    table->setColumnWidth(2,60);
+    table->setColumnWidth(3,60);
 
     QStringList labels;
-    labels << tr("Room ID") << tr("Room Name") << tr("Person");
+    labels << tr("Room ID") << tr("Room Name") << tr("Person") << tr("Status");
     table->setHorizontalHeaderLabels(labels);
 
     QHBoxLayout *hlayout = new QHBoxLayout;
     //QPushButton *prev_button = new QPushButton(tr("Previous"));
     //QPushButton *next_button = new QPushButton(tr("Next"));
+    QPushButton *fastjoin_button = new QPushButton(tr("Fast Join"));
+    QPushButton *refresh_button = new QPushButton(tr("Refresh"));
     QPushButton *join_button = new QPushButton(tr("Join"));
     QPushButton *create_button = new QPushButton(tr("Create room"));
     QCheckBox *waiting_only = new QCheckBox(tr("Waiting room only"));
@@ -46,6 +52,8 @@ HallDialog::HallDialog(MainWindow *main_window)
     //hlayout->addWidget(prev_button);
     //hlayout->addWidget(next_button);
     hlayout->addStretch();
+    hlayout->addWidget(fastjoin_button);
+    hlayout->addWidget(refresh_button);
     hlayout->addWidget(join_button);
     hlayout->addWidget(create_button);
     hlayout->addWidget(waiting_only);
@@ -58,13 +66,15 @@ HallDialog::HallDialog(MainWindow *main_window)
 
     //connect(prev_button, SIGNAL(clicked()), SLOT(pageUp()));
     //connect(next_button, SIGNAL(clicked()), SLOT(pageDown()));
+    connect(fastjoin_button, SIGNAL(clicked()), SLOT(accept()));
+    connect(refresh_button, SIGNAL(clicked()), SLOT(refreshRooms()));
     connect(join_button, SIGNAL(clicked()), SLOT(join()));
     connect(create_button, SIGNAL(clicked()), SLOT(createRoom()));
     connect(waiting_only, SIGNAL(toggled(bool)), SLOT(toggleDisplay(bool)));
 
     connect(table, SIGNAL(itemDoubleClicked(QTableWidgetItem*)), SLOT(join()));
 
-    refreshRooms(0);
+    //refreshRooms(0); 20111218
 }
 
 void HallDialog::pageUp(){
@@ -76,6 +86,7 @@ void HallDialog::pageDown(){
 }
 
 void HallDialog::join(){
+    // QMessageBox::warning(this, tr("Warning"), "Now in HallDialog::join()");
     int row = table->currentRow();
     if(row == -1)
         return;
@@ -89,25 +100,48 @@ void HallDialog::join(){
     if(!ok)
         return;
 
+    item = table->item(row, 3);
+    if(item->text()=="Playing"){
+        QMessageBox::warning(this, tr("Warning"), "NOT ALLOW JOIN A STARTED GAME!!!");
+        return;
+    }
+
     joinRoom(room_id);
 }
 
 void HallDialog::createRoom(){
-    ClientInstance->request("createRoom .");
-    refreshRooms(0);
+//    ClientInstance->request("createRoom .");
+//    refreshRooms(0);
+    this->setVisible(false);
+    emit(create_room());
 }
 
 void HallDialog::toggleDisplay(bool only_nonful){
 
 }
 
-void HallDialog::refreshRooms(int page){
-    ClientInstance->request("refreshRooms " + QString::number(page));
-    current_page = page;
+void HallDialog::refreshRooms(){
+    // int page=0;
+    // ClientInstance->request("refreshRooms " + QString::number(page));
+    // current_page = page;
+    // QMessageBox::warning(this, tr("Warning"), "Now in HallDialog::refreshRooms()");
+    // clear table
+    for(;table->rowCount();)
+    {
+        table->removeRow(0);
+    }
+    table->setColumnWidth(0,60);
+    table->setColumnWidth(1,200);
+    table->setColumnWidth(2,60);
+    table->setColumnWidth(3,60);
+    emit(refresh_rooms());
 }
 
 void HallDialog::joinRoom(int room_id){
-    ClientInstance->request("joinRoom " + QString::number(room_id));
+    // QMessageBox::warning(this, tr("Warning"), "Now in HallDialog::joinRoom()");
+    // ClientInstance->request("joinRoom " + QString::number(room_id));
+    this->setVisible(false);
+    emit(join_room(room_id));
 }
 
 void HallDialog::roomBegin(int total, int pagelimit){
@@ -186,4 +220,19 @@ void Client::roomError(const QString &errorStr){
 
 void Client::hallEntered(const QString &){
     HallDialogInstance->show();
+}
+
+// 20111218
+void HallDialog::updateRoomListTable(QString room){
+    QStringList tmp=room.split(":");
+    if(tmp.count()==4)
+    {
+        int newRowCount =table->rowCount();
+        table->insertRow(newRowCount);
+        table->setItem(newRowCount,0,new QTableWidgetItem(tmp[0]));
+        QString roomname = QString::fromUtf8(QByteArray::fromBase64(tmp[1].toAscii()));
+        table->setItem(newRowCount,1,new QTableWidgetItem(roomname));
+        table->setItem(newRowCount,2,new QTableWidgetItem(tmp[2]));
+        table->setItem(newRowCount,3,new QTableWidgetItem(tmp[3]));
+    }
 }

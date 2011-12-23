@@ -55,7 +55,7 @@ void Pixmap::MakeGray(QPixmap &pixmap){
         for(j=0; j<img.height(); j++){
             QRgb color = img.pixel(i, j);
             int gray = qGray(color);
-            color = qRgba(gray, gray, gray, qAlpha(color));
+            color = qRgb(gray, gray, gray);
             img.setPixel(i, j, color);
         }
     }
@@ -81,24 +81,20 @@ void Pixmap::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QW
 
 QVariant Pixmap::itemChange(GraphicsItemChange change, const QVariant &value){
     if(change == ItemSelectedHasChanged){
-//        if(value.toBool()){
-//            QGraphicsColorizeEffect *effect = new QGraphicsColorizeEffect(this);
-//            effect->setColor(QColor(0xCC, 0x00, 0x00));
-//            setGraphicsEffect(effect);
-//        }else
-//            setGraphicsEffect(NULL);
+        if(value.toBool()){
+            QGraphicsColorizeEffect *effect = new QGraphicsColorizeEffect(this);
+            effect->setColor(QColor(0xCC, 0x00, 0x00));
+            setGraphicsEffect(effect);
+        }else
+            setGraphicsEffect(NULL);
 
         emit selected_changed();
     }else if(change == ItemEnabledHasChanged){
-        if(this->inherits("CardItem"))
-        {
-            if(value.toBool()){
-                setOpacity(1.0);
-            }else{
-                setOpacity(0.7);
-            }
+        if(value.toBool()){
+            setOpacity(1.0);
+        }else{
+            setOpacity(0.7);
         }
-        else emit enable_changed();
     }
 
     return QGraphicsObject::itemChange(change, value);

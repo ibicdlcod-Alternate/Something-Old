@@ -106,6 +106,14 @@ void StartScene::switchToServer(Server *server){
 
     connect(server, SIGNAL(server_message(QString)), server_log, SLOT(append(QString)));
 
+    // 20111220
+    server_cmdline = new QLineEdit();
+    server_cmdline->move(server_log->x(),server_log->y()+server_log->height()+2);
+    server_cmdline->resize(server_log->width(),20);
+    addWidget(server_cmdline);
+    connect(server_cmdline, SIGNAL(returnPressed()), server, SLOT(processCmdLine()));
+    connect(server, SIGNAL(clearlog()), server_log, SLOT(clear()));
+
     update();
 }
 

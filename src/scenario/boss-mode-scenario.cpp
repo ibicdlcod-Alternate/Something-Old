@@ -263,10 +263,10 @@ public:
 
         boss_skillbanned << "luanji" << "shuangxiong" << "longdan" << "wusheng" << "guixin";
 
-        dummy_skills << "chujia" << "xuwei" << "tuoqiao" << "shenli" << "midao"
+        dummy_skills << "chujia" << "muyu" << "jinmachao" << "shenli" << "midao"
                      << "kuangfeng" << "dawu" << "kuangbao" << "shenfen" << "wuqian"
                      << "wumou" << "wuhun" << "tongxin" << "xinsheng" << "zaoxian"
-                     << "renjie" << "baiyin";
+                     << "renjie" << "baiyin" << "guiwei" << "xiangwei" << "qiliner" << "zhulu" << "yuesanshi";
     }
 
     void getRandomSkill(ServerPlayer *player, bool need_trans = false) const{

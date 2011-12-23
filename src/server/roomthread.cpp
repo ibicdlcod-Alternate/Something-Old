@@ -139,13 +139,6 @@ void CardUseStruct::parse(const QString &str, Room *room){
     }
 }
 
-QString EventTriplet::toString() const{
-    return QString("event = %1, target = %2[%3], data = %4[%5]")
-            .arg(event)
-            .arg(target->objectName()).arg(target->getGeneralName())
-            .arg(data->toString()).arg(data->typeName());
-}
-
 RoomThread::RoomThread(Room *room)
     :QThread(room), room(room)
 {
@@ -159,6 +152,15 @@ void RoomThread::addPlayerSkills(ServerPlayer *player, bool invoke_game_start){
 
         if(invoke_game_start && skill->getTriggerEvents().contains(GameStart))
             skill->trigger(GameStart, player, void_data);
+    }
+}
+
+void RoomThread::removePlayerSkills(ServerPlayer *player){
+    foreach(const TriggerSkill *skill, player->getTriggerSkills()){
+        if(room->mode == "04_1v3"){
+                continue;
+        }
+        removeAllSkill(skill);
     }
 }
 
@@ -332,10 +334,6 @@ static bool CompareByPriority(const TriggerSkill *a, const TriggerSkill *b){
 bool RoomThread::trigger(TriggerEvent event, ServerPlayer *target, QVariant &data){
     Q_ASSERT(QThread::currentThread() == this);
 
-    // push it to event stack
-    EventTriplet triplet(event, target, &data);
-    event_stack.push_back(triplet);
-
     bool broken = false;
     foreach(const TriggerSkill *skill, skill_table[event]){
         if(skill->triggerable(target)){
@@ -350,14 +348,7 @@ bool RoomThread::trigger(TriggerEvent event, ServerPlayer *target, QVariant &dat
             ai->filterEvent(event, target, data);
     }
 
-    // pop event stack
-    event_stack.pop_back();
-
     return broken;
-}
-
-const QList<EventTriplet> *RoomThread::getEventStack() const{
-    return &event_stack;
 }
 
 bool RoomThread::trigger(TriggerEvent event, ServerPlayer *target){
@@ -384,6 +375,26 @@ void RoomThread::addTriggerSkill(const TriggerSkill *skill){
             const TriggerSkill *trigger_skill = qobject_cast<const TriggerSkill *>(skill);
             addTriggerSkill(trigger_skill);
         }
+    }
+}
+
+void RoomThread::removeAllSkill(const QString &skill_name){
+    const TriggerSkill *skill = Sanguosha->getTriggerSkill(skill_name);
+    if(skill)
+        removeAllSkill(skill);
+}
+
+void RoomThread::removeAllSkill(const TriggerSkill *skill){
+    int count = refcount.value(skill, 0);
+    if(count > 1){
+        refcount[skill] --;
+        return;
+    }else
+        refcount.remove(skill);
+
+    QList<TriggerEvent> events = skill->getTriggerEvents();
+    foreach(TriggerEvent event, events){
+        skill_table[event].removeOne(skill);
     }
 }
 

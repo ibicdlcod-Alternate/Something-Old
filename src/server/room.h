@@ -41,7 +41,6 @@ public:
     QList<ServerPlayer *> getAllPlayers() const;
     QList<ServerPlayer *> getAlivePlayers() const;
     void output(const QString &message);
-    void outputEventStack();
     void enterDying(ServerPlayer *player, DamageStruct *reason);
     void killPlayer(ServerPlayer *victim, DamageStruct *reason = NULL);
     void revivePlayer(ServerPlayer *player);
@@ -99,7 +98,7 @@ public:
     ServerPlayer *getFront(ServerPlayer *a, ServerPlayer *b) const;
     void signup(ServerPlayer *player, const QString &screen_name, const QString &avatar, bool is_robot);
     ServerPlayer *getOwner() const;
-    void updateStateItem();
+    QString getRoleStateString();
 
     void reconnect(ServerPlayer *player, ClientSocket *socket);
     void marshal(ServerPlayer *player);
@@ -171,15 +170,19 @@ protected:
 
 private:
     QString mode;
-    QList<ServerPlayer*> players, alive_players;
     int player_count;
     ServerPlayer *current;
     ServerPlayer *reply_player;
     QList<int> pile1, pile2;
     QList<int> table_cards;
     QList<int> *draw_pile, *discard_pile;
+
+public: //20111218
+    QList<ServerPlayer*> players, alive_players;
     bool game_started;
     bool game_finished;
+
+private:
     lua_State *L;
     QList<AI *> ais;
 
@@ -231,6 +234,7 @@ signals:
     void room_message(const QString &msg);
     void game_start();
     void game_over(const QString &winner);
+    void room_finished(); // 20111220 by highlandz
 };
 
 #endif // ROOM_H

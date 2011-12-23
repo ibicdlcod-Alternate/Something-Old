@@ -41,8 +41,8 @@ QString Analeptic::getSubtype() const{
     return "buff_card";
 }
 
-QString Analeptic::getEffectPath(bool ) const{
-    return Card::getEffectPath();
+QString Analeptic::getEffectPath(bool is_male) const{
+    return Card::getEffectPath(is_male);
 }
 
 bool Analeptic::IsAvailable(const Player *player){
@@ -123,6 +123,7 @@ public:
             damage.to->isKongcheng())
         {
             Room *room = damage.to->getRoom();
+            room->setEmotion(player, "guding_blade");
 
             LogMessage log;
             log.type = "#GudingBladeEffect";
@@ -161,6 +162,7 @@ public:
                 log.arg = objectName();
                 log.arg2 = effect.slash->objectName();
                 player->getRoom()->sendLog(log);
+                player->getRoom()->setEmotion(player, "vine");
 
                 return true;
             }
@@ -173,6 +175,7 @@ public:
                 log.arg = objectName();
                 log.arg2 = effect.card->objectName();
                 player->getRoom()->sendLog(log);
+                player->getRoom()->setEmotion(player, "vine");
 
                 return true;
             }
@@ -185,6 +188,7 @@ public:
                 log.arg = QString::number(damage.damage);
                 log.arg2 = QString::number(damage.damage + 1);
                 player->getRoom()->sendLog(log);
+                player->getRoom()->setEmotion(player, "vine");
 
                 damage.damage ++;
                 data = QVariant::fromValue(damage);
@@ -214,6 +218,7 @@ public:
             log.from = player;
             log.arg = QString::number(damage.damage);
             player->getRoom()->sendLog(log);
+            player->getRoom()->setEmotion(player, "silver_lion");
 
             damage.damage = 1;
             data = QVariant::fromValue(damage);
@@ -233,6 +238,7 @@ void SilverLion::onUninstall(ServerPlayer *player) const{
         RecoverStruct recover;
         recover.card = this;
         player->getRoom()->recover(player, recover);
+        player->getRoom()->setEmotion(player, "silver_lion");
     }
 }
 
@@ -313,6 +319,9 @@ void IronChain::onUse(Room *room, const CardUseStruct &card_use) const{
         room->throwCard(this);
         room->playCardEffect("@recast", card_use.from->getGeneral()->isMale());
         card_use.from->drawCards(1);
+        if(card_use.card->getSkillName() == "zhinang"){
+            room->setPlayerMark(card_use.from,"zhinang_mark",0);
+        }
     }else
         TrickCard::onUse(room, card_use);
 }
@@ -329,7 +338,6 @@ void IronChain::onEffect(const CardEffectStruct &effect) const{
     effect.to->setChained(chained);
 
     effect.to->getRoom()->broadcastProperty(effect.to, "chained");
-    effect.to->getRoom()->setEmotion(effect.to, "chain");
 }
 
 SupplyShortage::SupplyShortage(Card::Suit suit, int number)
@@ -352,7 +360,7 @@ bool SupplyShortage::targetFilter(const QList<const Player *> &targets, const Pl
     if(to_select->containsTrick(objectName()))
         return false;
 
-    if(Self->hasSkill("qicai"))
+    if(Self->hasSkill("qicai") && !Self->hasFlag("baiban"))
         return true;
 
     int distance = Self->distanceTo(to_select);

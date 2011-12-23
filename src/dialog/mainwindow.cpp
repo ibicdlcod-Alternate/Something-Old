@@ -8,7 +8,9 @@
 #include "ui_mainwindow.h"
 #include "scenario-overview.h"
 #include "window.h"
-#include "halldialog.h"
+// #include "halldialog.h"
+#include "nativesocket.h"
+#include "time.h"
 
 #include <cmath>
 #include <QGraphicsView>
@@ -31,7 +33,6 @@ class FitView : public QGraphicsView
 public:
     FitView(QGraphicsScene *scene) : QGraphicsView(scene) {
         setSceneRect(Config.Rect);
-        startTimer(100);
     }
 
 protected:
@@ -45,12 +46,6 @@ protected:
             room_scene->adjustItems();
         }
     }
-
-    virtual void timerEvent(QTimerEvent *)
-    {
-        update();
-    }
-
 };
 
 MainWindow::MainWindow(QWidget *parent)
@@ -61,7 +56,19 @@ MainWindow::MainWindow(QWidget *parent)
 
     connection_dialog = new ConnectionDialog(this);
     connect(ui->actionStart_Game, SIGNAL(triggered()), connection_dialog, SLOT(exec()));
-    connect(connection_dialog, SIGNAL(accepted()), this, SLOT(startConnection()));
+    connect(connection_dialog, SIGNAL(qnodelist(QString,int)), this, SLOT(startQNodeList(QString,int)));
+    connect(connection_dialog, SIGNAL(qnodeinfo(QString,int)), this, SLOT(startQNodeInfo(QString,int)));
+    connect(this, SIGNAL(nodelistupdate(QString)), connection_dialog, SLOT(updateNodeListTable(QString)));
+
+    // 20111218
+    hall_dialog = new HallDialog(this);
+    connect(connection_dialog, SIGNAL(accepted()), this, SLOT(refreshRooms()));
+    connect(hall_dialog, SIGNAL(refresh_rooms()), this, SLOT(refreshRooms()));
+    connect(hall_dialog, SIGNAL(create_room()), this, SLOT(startCreateRoom()));
+    connect(hall_dialog, SIGNAL(join_room(int)), this, SLOT(startJoinRoom(int)));
+    connect(this, SIGNAL(rejoin_room(int)), this, SLOT(startReJoinRoom(int))); //20111220
+    connect(this, SIGNAL(roomlistupdate(QString)), hall_dialog, SLOT(updateRoomListTable(QString)));
+    connect(hall_dialog, SIGNAL(accepted()), this, SLOT(startConnection()));
 
     config_dialog = new ConfigDialog(this);
     connect(ui->actionConfigure, SIGNAL(triggered()), config_dialog, SLOT(show()));
@@ -297,7 +304,7 @@ void MainWindow::on_actionGeneral_Overview_triggered()
 
 void MainWindow::on_actionCard_Overview_triggered()
 {
-    CardOverview *overview = CardOverview::GetInstance(this);
+    CardOverview *overview = new CardOverview(this);
     overview->loadFromAll();
     overview->show();
 }
@@ -350,7 +357,7 @@ void MainWindow::on_actionAbout_triggered()
     QString forum_url = "http://qsanguosha.com";
     content.append(tr("Forum: <a href='%1'>%1</a> <br/>").arg(forum_url));
 
-    Window *window = new Window(tr("About QSanguosha"), QSize(365, 450));
+    Window *window = new Window(tr("About QSanguosha"), QSize(365, 411));
     scene->addItem(window);
 
     window->addContent(content);
@@ -546,34 +553,14 @@ void MainWindow::on_actionBroadcast_triggered()
 
 void MainWindow::on_actionAcknowledgement_triggered()
 {
-    QStringList contents;
-    contents.append(tr("QSanguosha staff:"));
 
-    contents.append(tr("AI Maintainance: William915, donle"));
-    contents.append(tr("Game Design: Moligaloo, Ubun Tenkai"));
-    contents.append(tr("Miscellaneous: Hypercross"));
-    contents.append(tr("Founder: Moligaloo"));
-
-    QString content;
-    foreach(QString string, contents)
-    {
-        content.append(QString("<p align='right'><i>%1</i></p>").arg(string));
-    }
-
-    Window *window = new Window(tr("About QSanguosha"), QSize(365, 411));
-    scene->addItem(window);
-
-    window->addContent(content);
-    window->addCloseButton(tr("OK"));
-    window->shift();
-
-    window->appear();
 }
 
 void MainWindow::on_actionPC_Console_Start_triggered()
 {
     ServerDialog *dialog = new ServerDialog(this);
     dialog->ensureEnableAI();
+    dialog->ensureDisableAnnounceIP();
     if(!dialog->config())
         return;
 
@@ -847,4 +834,111 @@ void MainWindow::on_actionSend_lowlevel_command_triggered()
     QString command = QInputDialog::getText(this, tr("Send low level command"), tr("Please input the raw low level command"));
     if(!command.isEmpty())
         ClientInstance->request(command);
+}
+
+// 20111218 -->
+void MainWindow::startQNodeList(QString addr, int port){
+    NativeClientSocket *socket = new NativeClientSocket;
+    socket->setParent(this);
+    socket->connectToNode(addr,port);
+    socket->send("Qnodelist .");
+    connect(socket, SIGNAL(message_got(char*)), this, SLOT(process_socket_Reply(char*)));
+    connect(socket, SIGNAL(error_message(QString)), this, SLOT(process_socket_error_message(QString)));
+}
+
+void MainWindow::startQNodeInfo(QString addr, int port){
+    NativeClientSocket *socket = new NativeClientSocket;
+    socket->setParent(this);
+    socket->connectToNode(addr,port);
+    socket->send("Qnodeinfo "+QString::number(clock()));
+    connect(socket, SIGNAL(message_got(char*)), this, SLOT(process_socket_Reply(char*)));
+    connect(socket, SIGNAL(error_message(QString)), this, SLOT(process_socket_error_message(QString)));
+}
+
+void MainWindow::process_socket_Reply(char* reply)
+{
+    if(strlen(reply) <= 2) return;
+    QString cmd=QString(reply);
+    cmd=cmd.trimmed();
+    if(cmd.indexOf("nodelist")!=-1)
+    {
+        QStringList tmplist = cmd.split(" ");
+        emit(nodelistupdate(tmplist[1]));
+    }
+    else if(cmd.indexOf("nodeinfo")!=-1)
+    {
+        long end=clock();
+        QStringList tmplist = cmd.split(" ");
+        QStringList tmplist2 = tmplist[1].split(":");
+        if(tmplist2.count()==9)
+        {
+            QString servername=QString::fromUtf8(QByteArray::fromBase64(tmplist2[2].toAscii()));
+            if(tmplist2[5]=="1"){tmplist2[5]="(2)";} else {tmplist2[5]="";} // second general
+            QString info=tmplist2[0]+":"+tmplist2[1]+":"+servername+":"+tmplist2[3]+":"+tmplist2[4]+":"+tmplist2[5]+":"+tmplist2[6]+":"+tmplist2[7]+":"+QString::number(end-tmplist2[8].toInt());
+            emit(nodelistupdate(info));
+        }
+    }
+    else if(cmd.indexOf("room ")!=-1)
+    {
+        if(cmd=="room 0"){
+            QMessageBox::warning(this, tr("Warning"), tr("NO_ROOM_FOUND! NOW_WILL_AUTO_CREATEROOM!"));
+            // hall_dialog->setVisible(false);
+            emit(hall_dialog->accept());
+        }
+        else
+        {
+            QStringList tmplist = cmd.split(" ");
+            emit(roomlistupdate(tmplist[1]));
+        }
+    }
+    else if(cmd.indexOf("foundRoomID ")!=-1){
+        QStringList tmplist = cmd.split(" ");
+        QString roomid=tmplist[1];
+        emit(rejoin_room(roomid.toInt()));
+        return;
+    }
+}
+
+void MainWindow::process_socket_error_message(){;}
+
+void MainWindow::refreshRooms(){
+    if(!hall_dialog->isVisible()){
+        hall_dialog->setVisible(true);
+    }
+    NativeClientSocket *socket = new NativeClientSocket;
+    socket->setParent(this);
+    socket->connectToNode(Config.HostAddress,Config.ServerPort);
+
+    QString base64 = Config.UserName.toUtf8().toBase64();
+
+    if(!Config.LastObjname.isEmpty() && !base64.isEmpty())
+    {
+        socket->send("refreshRooms "+base64+":"+Config.LastObjname);
+    }
+    else
+    {socket->send("refreshRooms .");}
+    connect(socket, SIGNAL(message_got(char*)), this, SLOT(process_socket_Reply(char*)));
+    connect(socket, SIGNAL(error_message(QString)), this, SLOT(process_socket_error_message(QString)));
+}
+
+void MainWindow::startCreateRoom(){
+    Client *client = new Client(this);
+    client->createroom();
+    connect(client, SIGNAL(server_connected()), SLOT(enterRoom()));
+    connect(client, SIGNAL(error_message(QString)), SLOT(networkError(QString)));
+}
+
+void MainWindow::startJoinRoom(int roomid){
+    Client *client = new Client(this);
+    client->joinroom(roomid);
+    connect(client, SIGNAL(error_message(QString)), SLOT(networkError(QString)));
+    connect(client, SIGNAL(server_connected()), SLOT(enterRoom()));
+}
+
+// 20111220
+void MainWindow::startReJoinRoom(int roomid){
+    Client *client = new Client(this);
+    client->rejoinroom(roomid);
+    connect(client, SIGNAL(error_message(QString)), SLOT(networkError(QString)));
+    connect(client, SIGNAL(server_connected()), SLOT(enterRoom()));
 }

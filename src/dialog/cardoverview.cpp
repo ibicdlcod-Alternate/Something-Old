@@ -4,15 +4,6 @@
 #include "clientstruct.h"
 #include "client.h"
 
-static CardOverview *Overview;
-
-CardOverview *CardOverview::GetInstance(QWidget *main_window){
-    if(Overview == NULL)
-        Overview = new CardOverview(main_window);
-
-    return Overview;
-}
-
 CardOverview::CardOverview(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::CardOverview)
@@ -28,9 +19,7 @@ CardOverview::CardOverview(QWidget *parent) :
     if(ServerInfo.FreeChoose)
         connect(ui->getCardButton, SIGNAL(clicked()), this, SLOT(askCard()));
     else
-        ui->getCardButton->hide();
-
-    ui->cardDescriptionBox->setProperty("description", true);
+        ui->getCardButton->hide();    
 }
 
 void CardOverview::loadFromAll(){

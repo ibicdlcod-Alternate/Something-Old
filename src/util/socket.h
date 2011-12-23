@@ -23,6 +23,7 @@ class ClientSocket: public QObject{
 
 public:
     virtual void connectToHost() = 0;
+    virtual void connectToNode(QString addr, int port) = 0; //20111218
     virtual void disconnectFromHost() = 0;
     virtual void send(const QString &message) = 0;
     virtual bool isConnected() const = 0;

@@ -51,6 +51,18 @@ void Slash::use(Room *room, ServerPlayer *source, const QList<ServerPlayer *> &t
 void Slash::onEffect(const CardEffectStruct &card_effect) const{
     Room *room = card_effect.from->getRoom();
 
+    if(this->objectName() == "fire_slash"){
+    room->broadcastInvoke("animate", QString("fire-slash:%1").arg(card_effect.from->objectName()));
+    room->setEmotion(card_effect.to, "victim");
+}else
+    if(this->objectName() == "thunder_slash"){
+    room->broadcastInvoke("animate", QString("thunder-slash:%1").arg(card_effect.from->objectName()));
+    room->setEmotion(card_effect.to, "victim");
+}else{
+    room->broadcastInvoke("animate", QString("slash:%1").arg(card_effect.from->objectName()));
+    room->setEmotion(card_effect.to, "victim");
+}
+
     SlashEffectStruct effect;
     effect.from = card_effect.from;
     effect.nature = nature;
@@ -74,18 +86,18 @@ bool Slash::targetFilter(const QList<const Player *> &targets, const Player *to_
 
     bool distance_limit = true;
 
-    if(Self->hasFlag("tianyi_success")){
+    if(Self->hasFlag("tianyi_success") && !Self->hasFlag("baiban")){
         distance_limit = false;
         slash_targets ++;
     }
 
-    if(Self->hasSkill("shenji") && Self->getWeapon() == NULL)
+    if(Self->hasSkill("shenji") && Self->getWeapon() == NULL && !Self->hasFlag("baiban"))
         slash_targets = 3;
 
     if(targets.length() >= slash_targets)
         return false;
 
-    if(inherits("WushenSlash")){
+    if(inherits("WushenSlash") && !Self->hasFlag("baiban")){
         distance_limit = false;
     }
 
@@ -205,6 +217,7 @@ public:
     virtual bool trigger(TriggerEvent event, ServerPlayer *player, QVariant &data) const{
         SlashEffectStruct effect = data.value<SlashEffectStruct>();
         effect.to->addMark("qinggang");
+        effect.from->getRoom()->setEmotion(effect.from, "qinggang_sword");
 
         return false;
     }
@@ -237,6 +250,7 @@ public:
         Room *room = player->getRoom();
         const Card *card = room->askForCard(player, "slash", "blade-slash");
         if(card){
+            room->setEmotion(player, "blade");
             // if player is drank, unset his flag
             if(player->hasFlag("drank"))
                 room->setPlayerFlag(player, "-drank");
@@ -353,6 +367,7 @@ public:
         Room *room = player->getRoom();
         CardStar card = room->askForCard(player, "@axe", "@axe:" + effect.to->objectName());
         if(card){
+            room->setEmotion(player, "axe");
             QList<int> card_ids = card->getSubcards();
             foreach(int card_id, card_ids){
                 LogMessage log;
@@ -458,6 +473,7 @@ public:
         if(asked == "jink"){
             Room *room = player->getRoom();
             if(room->askForSkillInvoke(player, objectName())){
+
                 JudgeStruct judge;
                 judge.pattern = QRegExp("(.*):(heart|diamond):(.*)");
                 judge.good = true;
@@ -469,19 +485,17 @@ public:
                     Jink *jink = new Jink(Card::NoSuit, 0);
                     jink->setSkillName(objectName());
                     room->provide(jink);
-                    room->setEmotion(player, "good");
-                    room->broadcastInvoke("playAudio", objectName());
-
+                    if(player->getGeneral()->isMale()){
+                        room->broadcastInvoke("playAudio", "male-jink");
+                    }else{
+                        room->broadcastInvoke("playAudio", "female-jink");
+                        }
                     return true;
-                }else
-                    room->setEmotion(player, "bad");
-            }
+                }}
         }
         return false;
     }
 };
-
-
 
 EightDiagram::EightDiagram(Suit suit, int number)
     :Armor(suit, number){
@@ -564,7 +578,14 @@ void SavageAssault::onEffect(const CardEffectStruct &effect) const{
     Room *room = effect.to->getRoom();
     const Card *slash = room->askForCard(effect.to, "slash", "savage-assault-slash:" + effect.from->objectName());
     if(slash)
-        room->setEmotion(effect.to, "killer");
+        if(slash->objectName() == "fire_slash"){
+        room->broadcastInvoke("animate", QString("fire-slash:%1").arg(effect.to->objectName()));
+    }else
+        if(slash->objectName() == "thunder_slash"){
+        room->broadcastInvoke("animate", QString("thunder-slash:%1").arg(effect.to->objectName()));
+    }else{
+        room->broadcastInvoke("animate", QString("slash:%1").arg(effect.to->objectName()));
+    }
     else{
         DamageStruct damage;
         damage.card = this;
@@ -587,7 +608,7 @@ void ArcheryAttack::onEffect(const CardEffectStruct &effect) const{
     Room *room = effect.to->getRoom();
     const Card *jink = room->askForCard(effect.to, "jink", "archery-attack-jink:" + effect.from->objectName());
     if(jink)
-        room->setEmotion(effect.to, "jink");
+        room->broadcastInvoke("animate", QString("jink:%1").arg(effect.to->objectName()));
     else{
         DamageStruct damage;
         damage.card = this;
@@ -639,7 +660,7 @@ bool Collateral::targetsFeasible(const QList<const Player *> &targets, const Pla
 
 bool Collateral::targetFilter(const QList<const Player *> &targets, const Player *to_select, const Player *Self) const{
     if(targets.isEmpty()){
-        if(to_select->hasSkill("weimu") && isBlack())
+        if(to_select->hasSkill("weimu") && !to_select->hasFlag("baiban") && isBlack())
             return false;
 
         return to_select->getWeapon() && to_select != Self;
@@ -730,8 +751,9 @@ void Duel::onEffect(const CardEffectStruct &effect) const{
     room->setEmotion(second, "duel-b");
 
     forever{
-        if(second->hasSkill("wushuang")){
+        if(second->hasSkill("wushuang") && !second->hasFlag("baiban")){
             room->playSkillEffect("wushuang");
+            room->setEmotion(second, "wushuang");
             const Card *slash = room->askForCard(first, "slash", "@wushuang-slash-1:" + second->objectName());
             if(slash == NULL)
                 break;
@@ -772,6 +794,9 @@ bool Snatch::targetFilter(const QList<const Player *> &targets, const Player *to
         return false;
 
     if(Self->distanceTo(to_select) > 1 && !Self->hasSkill("qicai"))
+        return false;
+
+    if(Self->distanceTo(to_select) > 1 && Self->hasFlag("baiban"))
         return false;
 
     return true;
@@ -940,6 +965,7 @@ public:
             log.arg = objectName();
             log.arg2 = effect.slash->objectName();
             player->getRoom()->sendLog(log);
+            player->getRoom()->setEmotion(player, "renwang_shield");
 
             return true;
         }else
